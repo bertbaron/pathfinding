@@ -5,6 +5,15 @@ import (
 	"math"
 )
 
+type Algorithm int
+
+const (
+	Astar Algorithm = iota
+	DepthFirst Algorithm = iota
+	BreadthFirst Algorithm = iota
+	IDAstar Algorithm = iota
+)
+
 type State interface {
 	Expand() []State
 	Cost() float64
@@ -19,32 +28,31 @@ type Node struct {
 }
 
 type strategy interface {
-	Peek() *Node
 	Take() *Node
 	Add(node *Node)
 }
 
 // A PriorityQueue implements heap.Interface and holds Nodes
-type PriorityQueue []*Node
+type priorityQueue []*Node
 
-func (pq PriorityQueue) Len() int {
+func (pq priorityQueue) Len() int {
 	return len(pq)
 }
 
-func (pq PriorityQueue) Less(i, j int) bool {
+func (pq priorityQueue) Less(i, j int) bool {
 	return pq[i].value < pq[j].value
 }
 
-func (pq PriorityQueue) Swap(i, j int) {
+func (pq priorityQueue) Swap(i, j int) {
 	pq[i], pq[j] = pq[j], pq[i]
 }
 
-func (pq *PriorityQueue) Push(x interface{}) {
+func (pq *priorityQueue) Push(x interface{}) {
 	item := x.(*Node)
 	*pq = append(*pq, item)
 }
 
-func (pq *PriorityQueue) Pop() interface{} {
+func (pq *priorityQueue) Pop() interface{} {
 	old := *pq
 	n := len(old)
 	item := old[n - 1]
@@ -52,21 +60,34 @@ func (pq *PriorityQueue) Pop() interface{} {
 	return item
 }
 
-// Piority queue as A* Strategy
-func (pq *PriorityQueue) Peek() *Node {
-	n := len(*pq)
-	if n > 0 {
-		return (*pq)[n - 1]
+// strategy
+func (pq *priorityQueue) Take() *Node {
+	if len(*pq) == 0 {
+		return nil
 	}
-	return nil
-}
-
-func (pq *PriorityQueue) Take() *Node {
 	return heap.Pop(pq).(*Node)
 }
 
-func (pq *PriorityQueue) Add(node *Node) {
+// strategy
+func (pq *priorityQueue) Add(node *Node) {
 	heap.Push(pq, node)
+}
+
+type lifo []*Node
+
+func (dfq *lifo) Take() *Node {
+	if len(*dfq) == 0 {
+		return nil
+	}
+	old := *dfq
+	n := len(old)
+	item := old[n - 1]
+	*dfq = old[0 : n - 1]
+	return item
+}
+
+func (dfq *lifo) Add(node *Node) {
+	*dfq = append(*dfq, node)
 }
 
 // A possibly mutable constraint, returns true if a node is constraint, so it should not be expanded further.
@@ -76,9 +97,14 @@ type constraint interface {
 }
 
 func aStar() strategy {
-	pq := make(PriorityQueue, 0, 64)
+	pq := make(priorityQueue, 0, 64)
 	heap.Init(&pq)
 	return &pq
+}
+
+func depthFirst() strategy {
+	queue := make(lifo, 0, 64)
+	return &queue
 }
 
 type noConstraint bool
@@ -171,12 +197,15 @@ type Result struct {
 	Expanded int
 }
 
-func Solve(rootState State) Result {
+func Solve(rootState State, algorithm Algorithm, limit float64) Result {
 	var s strategy
-	s = aStar()
+	switch algorithm {
+	case Astar: s = aStar()
+	case DepthFirst: s = depthFirst()
+	}
 	s.Add(&Node{nil, rootState, rootState.Cost() + rootState.Heuristic()})
 	var constraint noConstraint
 
-	result := generalSearch(s, 0, 0, constraint, math.MaxFloat64)
+	result := generalSearch(s, 0, 0, constraint, limit)
 	return Result{result.node, result.visited, result.expanded}
 }
