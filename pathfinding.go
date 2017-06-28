@@ -117,40 +117,6 @@ func (c noConstraint) onExpand(node *Node) bool {
 	return false
 }
 
-/*
-(defn- general-search [state expand-fn h-fn constraint goal-fn the-limit]
-  (let [limit ^double the-limit]
-    (loop [queue          (:strategy state)
-           contour        (Double/POSITIVE_INFINITY)
-           visited        (long (get state :visited 0))
-           expanded       (long (get state :expanded 0))]
-      (when (Thread/interrupted) (throw (InterruptedException.)))
-      (if-let [^Node node (s-peek queue)]
-        (if (on-visit constraint node)
-          (recur (s-pop! queue) contour (inc visited) expanded)
-          (let [f-cost (.value node)
-                queue  (s-pop! queue)]
-              (if (goal-fn (.state node))
-                {:node node :contour contour :visited visited :expanded expanded
-                 :next-solver #(general-search { :strategy queue :visited visited :expanded expanded} expand-fn h-fn constraint goal-fn limit)}
-                (let [moves (expand-fn (.state node))
-                      [queue expanded contour]
-                        (loop [queue    queue
-                               contour  contour
-                               expanded (long expanded)
-                               moves    moves]
-                          (if-let [move (first moves)]
-                            (let [childnode ^Node (expand-node node h-fn move)]
-                              (if (on-expand constraint childnode)
-                                (recur queue contour expanded (next moves))
-                                (if (> (.value childnode) limit)
-                                  (recur queue (double (min contour (.value childnode))) expanded (next moves))
-                                  (recur (s-conj! queue childnode) contour (inc expanded) (next moves)))))
-                            [queue expanded contour]))]
-                  (recur queue (double contour) (inc visited) (long expanded))))))
-        {:node nil :contour contour :visited visited :expanded expanded}))))
- */
-
 type result struct {
 	node     *Node
 	contour  float64
@@ -191,6 +157,26 @@ func generalSearch(queue strategy, visited int, expanded int, constr constraint,
 	return result{nil, contour, visited, expanded}
 }
 
+func idaStar(rootState State, limit float64) result {
+	visited := 0
+	expanded := 0
+	contour := 0.0
+	for true {
+		// TODO doesn't stop when contour is infinity when there is no limit?
+		s := depthFirst()
+		s.Add(&Node{nil, rootState, rootState.Cost() + rootState.Heuristic()})
+		var constraint noConstraint
+		lastResult := generalSearch(s, visited, expanded, constraint, contour)
+		if lastResult.node != nil || lastResult.contour > limit {
+			return lastResult
+		}
+		visited = lastResult.visited
+		expanded = lastResult.expanded
+		contour = lastResult.contour
+	}
+	panic("Shouldn't be reached")
+}
+
 type Result struct {
 	Solution *Node
 	Visited  int
@@ -198,6 +184,10 @@ type Result struct {
 }
 
 func Solve(rootState State, algorithm Algorithm, limit float64) Result {
+	if algorithm == IDAstar {
+		result := idaStar(rootState, limit)
+		return Result{result.node, result.visited, result.expanded}
+	}
 	var s strategy
 	switch algorithm {
 	case Astar: s = aStar()

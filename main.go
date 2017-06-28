@@ -55,7 +55,7 @@ func printSolution(node *Node) {
 
 func main() {
 	state := swapState{[]byte{1, 4, 5, 2, 3}, 0.0, -1}
-	solution := Solve(state, DepthFirst, 20.0)
+	solution := Solve(state, IDAstar, 20.0)
 	fmt.Printf("visited: %d, expanded %d\n", solution.Visited, solution.Expanded)
 	if solution.Solution == nil {
 		fmt.Printf("No solution found\n")
