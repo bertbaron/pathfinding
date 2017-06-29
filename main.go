@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"log"
+	"runtime/pprof"
 )
 
 type swapState struct {
@@ -45,6 +48,28 @@ func (v swapState) Heuristic() float64 {
 	return 0.0
 }
 
+type dummyState float64
+
+func (v dummyState) Expand() []State {
+	n := 5
+	steps := make([]State, n, n)
+	for i := 0; i < n; i++ {
+		steps[i] = dummyState(v + 1.0)
+	}
+	return steps
+}
+
+func (v dummyState) IsGoal() bool {
+	return v >= 11
+}
+
+func (v dummyState) Cost() float64 {
+	return float64(v)
+}
+
+func (v dummyState) Heuristic() float64 {
+	return 0.0
+}
 func printSolution(node *Node) {
 	if node == nil {
 		return
@@ -54,7 +79,16 @@ func printSolution(node *Node) {
 }
 
 func main() {
-	state := swapState{[]byte{1, 4, 5, 2, 3}, 0.0, -1}
+
+	f, err := os.Create("cpu.prof")
+	if err != nil {
+		log.Fatal(err)
+	}
+	pprof.StartCPUProfile(f)
+	defer pprof.StopCPUProfile()
+
+	//state := swapState{[]byte{5, 4, 3, 2, 6, 1}, 0.0, -1}
+	state := dummyState(0.0)
 	solution := Solve(state, IDAstar, 20.0)
 	fmt.Printf("visited: %d, expanded %d\n", solution.Visited, solution.Expanded)
 	if solution.Solution == nil {
@@ -63,4 +97,11 @@ func main() {
 		fmt.Printf("Solution found in %.0f steps\n", solution.Solution.state.Cost())
 		printSolution(solution.Solution)
 	}
+
+	f, err = os.Create("mem.prof")
+	if err != nil {
+		log.Fatal(err)
+	}
+	pprof.WriteHeapProfile(f)
+	f.Close()
 }

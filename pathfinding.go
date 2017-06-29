@@ -3,6 +3,8 @@ package main
 import (
 	"container/heap"
 	"math"
+	"fmt"
+	"time"
 )
 
 type Algorithm int
@@ -162,6 +164,7 @@ func idaStar(rootState State, limit float64) result {
 	expanded := 0
 	contour := 0.0
 	for true {
+		start := time.Now()
 		// TODO doesn't stop when contour is infinity when there is no limit?
 		s := depthFirst()
 		s.Add(&Node{nil, rootState, rootState.Cost() + rootState.Heuristic()})
@@ -170,6 +173,10 @@ func idaStar(rootState State, limit float64) result {
 		if lastResult.node != nil || lastResult.contour > limit {
 			return lastResult
 		}
+
+		seconds := float64(time.Since(start).Seconds())
+		rate := float64(lastResult.visited - visited) / seconds
+		fmt.Printf("Contour: %f, expanded: %d, %.0f/s\n", contour, visited, rate)
 		visited = lastResult.visited
 		expanded = lastResult.expanded
 		contour = lastResult.contour
