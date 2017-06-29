@@ -70,12 +70,12 @@ func (v dummyState) Cost() float64 {
 func (v dummyState) Heuristic() float64 {
 	return 0.0
 }
-func printSolution(node *Node) {
-	if node == nil {
+func printSolution(node Node) {
+	if !node.Exists() {
 		return
 	}
-	printSolution(node.parent)
-	fmt.Println(node.state)
+	printSolution(node.Parent())
+	fmt.Println(node.State())
 }
 
 func main() {
@@ -89,12 +89,12 @@ func main() {
 
 	//state := swapState{[]byte{5, 4, 3, 2, 6, 1}, 0.0, -1}
 	state := dummyState(0.0)
-	solution := Solve(state, IDAstar, 20.0)
+	solution := Solve(state, Astar, 20)
 	fmt.Printf("visited: %d, expanded %d\n", solution.Visited, solution.Expanded)
-	if solution.Solution == nil {
+	if !solution.Solution.Exists() {
 		fmt.Printf("No solution found\n")
 	} else {
-		fmt.Printf("Solution found in %.0f steps\n", solution.Solution.state.Cost())
+		fmt.Printf("Solution found in %.0f steps\n", solution.Solution.State().Cost())
 		printSolution(solution.Solution)
 	}
 

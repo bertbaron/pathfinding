@@ -23,19 +23,43 @@ type State interface {
 	IsGoal() bool
 }
 
-type Node struct {
-	parent *Node
+type Node interface {
+	Parent() Node
+	State() State
+	Exists() bool
+}
+
+type Result struct {
+	Solution Node
+	Visited  int
+	Expanded int
+}
+
+type node struct {
+	parent *node
 	state  State
 	value  float64
 }
 
+func (node node) Parent() Node {
+	return node.parent
+}
+
+func (node node) State() State {
+	return node.state
+}
+
+func (node *node) Exists() bool {
+	return node != nil
+}
+
 type strategy interface {
-	Take() *Node
-	Add(node *Node)
+	Take() *node
+	Add(node *node)
 }
 
 // A PriorityQueue implements heap.Interface and holds Nodes
-type priorityQueue []*Node
+type priorityQueue []*node
 
 func (pq priorityQueue) Len() int {
 	return len(pq)
@@ -50,7 +74,7 @@ func (pq priorityQueue) Swap(i, j int) {
 }
 
 func (pq *priorityQueue) Push(x interface{}) {
-	item := x.(*Node)
+	item := x.(*node)
 	*pq = append(*pq, item)
 }
 
@@ -63,21 +87,21 @@ func (pq *priorityQueue) Pop() interface{} {
 }
 
 // strategy
-func (pq *priorityQueue) Take() *Node {
+func (pq *priorityQueue) Take() *node {
 	if len(*pq) == 0 {
 		return nil
 	}
-	return heap.Pop(pq).(*Node)
+	return heap.Pop(pq).(*node)
 }
 
 // strategy
-func (pq *priorityQueue) Add(node *Node) {
+func (pq *priorityQueue) Add(node *node) {
 	heap.Push(pq, node)
 }
 
-type lifo []*Node
+type lifo []*node
 
-func (dfq *lifo) Take() *Node {
+func (dfq *lifo) Take() *node {
 	if len(*dfq) == 0 {
 		return nil
 	}
@@ -88,14 +112,14 @@ func (dfq *lifo) Take() *Node {
 	return item
 }
 
-func (dfq *lifo) Add(node *Node) {
+func (dfq *lifo) Add(node *node) {
 	*dfq = append(*dfq, node)
 }
 
 // A possibly mutable constraint, returns true if a node is constraint, so it should not be expanded further.
 type constraint interface {
-	onVisit(node *Node) bool
-	onExpand(node *Node) bool
+	onVisit(node *node) bool
+	onExpand(node *node) bool
 }
 
 func aStar() strategy {
@@ -111,16 +135,16 @@ func depthFirst() strategy {
 
 type noConstraint bool
 
-func (c noConstraint) onVisit(node *Node) bool {
+func (c noConstraint) onVisit(node *node) bool {
 	return false
 }
 
-func (c noConstraint) onExpand(node *Node) bool {
+func (c noConstraint) onExpand(node *node) bool {
 	return false
 }
 
 type result struct {
-	node     *Node
+	node     *node
 	contour  float64
 	visited  int
 	expanded int
@@ -130,19 +154,19 @@ func generalSearch(queue strategy, visited int, expanded int, constr constraint,
 	contour := math.MaxFloat64
 
 	for {
-		node := queue.Take()
-		if node == nil {
+		n := queue.Take()
+		if n == nil {
 			return result{nil, contour, visited, expanded}
 		}
 		visited++
-		if constr.onVisit(node) {
+		if constr.onVisit(n) {
 			continue
 		}
-		if node.state.IsGoal() {
-			return result{node, contour, visited, expanded}
+		if n.state.IsGoal() {
+			return result{n, contour, visited, expanded}
 		}
-		for _, child := range node.state.Expand() {
-			childNode := &Node{node, child, math.Max(node.value, child.Cost() + child.Heuristic())}
+		for _, child := range n.state.Expand() {
+			childNode := &node{n, child, math.Max(n.value, child.Cost() + child.Heuristic())}
 			if constr.onExpand(childNode) {
 				continue
 			}
@@ -167,7 +191,7 @@ func idaStar(rootState State, limit float64) result {
 		start := time.Now()
 		// TODO doesn't stop when contour is infinity when there is no limit?
 		s := depthFirst()
-		s.Add(&Node{nil, rootState, rootState.Cost() + rootState.Heuristic()})
+		s.Add(&node{nil, rootState, rootState.Cost() + rootState.Heuristic()})
 		var constraint noConstraint
 		lastResult := generalSearch(s, visited, expanded, constraint, contour)
 		if lastResult.node != nil || lastResult.contour > limit {
@@ -184,12 +208,6 @@ func idaStar(rootState State, limit float64) result {
 	panic("Shouldn't be reached")
 }
 
-type Result struct {
-	Solution *Node
-	Visited  int
-	Expanded int
-}
-
 func Solve(rootState State, algorithm Algorithm, limit float64) Result {
 	if algorithm == IDAstar {
 		result := idaStar(rootState, limit)
@@ -200,7 +218,7 @@ func Solve(rootState State, algorithm Algorithm, limit float64) Result {
 	case Astar: s = aStar()
 	case DepthFirst: s = depthFirst()
 	}
-	s.Add(&Node{nil, rootState, rootState.Cost() + rootState.Heuristic()})
+	s.Add(&node{nil, rootState, rootState.Cost() + rootState.Heuristic()})
 	var constraint noConstraint
 
 	result := generalSearch(s, 0, 0, constraint, limit)
