@@ -21,6 +21,10 @@ func swap(vector []byte, index int) []byte {
 	return cp
 }
 
+func (v swapState) Id() interface{} {
+	return fmt.Sprintf("%q", v.vector)
+}
+
 func (v swapState) Expand() []State {
 	n := len(v.vector) - 1
 	steps := make([]State, n, n)
@@ -49,6 +53,10 @@ func (v swapState) Heuristic() float64 {
 }
 
 type dummyState float64
+
+func (v dummyState) Id() interface{} {
+	return v
+}
 
 func (v dummyState) Expand() []State {
 	n := 5
@@ -89,13 +97,13 @@ func main() {
 
 	//state := swapState{[]byte{5, 4, 3, 2, 6, 1}, 0.0, -1}
 	state := dummyState(0.0)
-	solution := Solve(state, Astar, 20)
+	solution := Solve(state, IDAstar, NO_RETURN, 20)
 	fmt.Printf("visited: %d, expanded %d\n", solution.Visited, solution.Expanded)
 	if !solution.Solution.Exists() {
 		fmt.Printf("No solution found\n")
 	} else {
 		fmt.Printf("Solution found in %.0f steps\n", solution.Solution.State().Cost())
-		printSolution(solution.Solution)
+		//printSolution(solution.Solution)
 	}
 
 	f, err = os.Create("mem.prof")

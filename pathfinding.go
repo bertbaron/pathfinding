@@ -16,11 +16,21 @@ const (
 	IDAstar Algorithm = iota
 )
 
+type Constraint int
+
+const (
+	NONE Constraint = iota
+	NO_RETURN Constraint = iota
+	NO_LOOP Constraint = iota
+	SHORTEST_PATH_TO_STATE Constraint = iota
+)
+
 type State interface {
-	Expand() []State
 	Cost() float64
-	Heuristic() float64
 	IsGoal() bool
+	Expand() []State
+	Heuristic() float64
+	Id() interface{}
 }
 
 type Node interface {
@@ -117,7 +127,7 @@ func (dfq *lifo) Add(node *node) {
 }
 
 // A possibly mutable constraint, returns true if a node is constraint, so it should not be expanded further.
-type constraint interface {
+type iconstraint interface {
 	onVisit(node *node) bool
 	onExpand(node *node) bool
 }
@@ -143,6 +153,17 @@ func (c noConstraint) onExpand(node *node) bool {
 	return false
 }
 
+type noReturnConstraint bool
+
+func (c noReturnConstraint) onVisit(node *node) bool {
+	fmt.Println("test")
+	return node.parent != nil && node.parent.parent != nil && node.parent.parent.state.Id() == node.state.Id()
+}
+
+func (c noReturnConstraint) onExpand(node *node) bool {
+	return false
+}
+
 type result struct {
 	node     *node
 	contour  float64
@@ -150,7 +171,7 @@ type result struct {
 	expanded int
 }
 
-func generalSearch(queue strategy, visited int, expanded int, constr constraint, limit float64) result {
+func generalSearch(queue strategy, visited int, expanded int, constr iconstraint, limit float64) result {
 	contour := math.MaxFloat64
 
 	for {
@@ -208,7 +229,7 @@ func idaStar(rootState State, limit float64) result {
 	panic("Shouldn't be reached")
 }
 
-func Solve(rootState State, algorithm Algorithm, limit float64) Result {
+func Solve(rootState State, algorithm Algorithm, constraint Constraint, limit float64) Result {
 	if algorithm == IDAstar {
 		result := idaStar(rootState, limit)
 		return Result{result.node, result.visited, result.expanded}
@@ -219,8 +240,13 @@ func Solve(rootState State, algorithm Algorithm, limit float64) Result {
 	case DepthFirst: s = depthFirst()
 	}
 	s.Add(&node{nil, rootState, rootState.Cost() + rootState.Heuristic()})
-	var constraint noConstraint
 
-	result := generalSearch(s, 0, 0, constraint, limit)
+	var constr iconstraint
+	switch constraint {
+	case NONE: constr = noConstraint(false)
+	case NO_RETURN: constr = noReturnConstraint(false)
+	}
+
+	result := generalSearch(s, 0, 0, constr, limit)
 	return Result{result.node, result.visited, result.expanded}
 }
