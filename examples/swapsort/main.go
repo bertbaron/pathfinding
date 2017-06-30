@@ -13,6 +13,14 @@ type swapState struct {
 	op     int
 }
 
+func newSwapState(vector []byte, cost float64, op int) swapState {
+	return swapState{vector, cost, op}
+}
+
+func swapProblem(initialState []byte) swapState {
+	return newSwapState(initialState, 0.0, -1)
+}
+
 // returns a copy of the given vector, where the element at index is swapped with its right neighbour
 func swap(vector []byte, index int) []byte {
 	cp := make([]byte, len(vector), len(vector))
@@ -22,14 +30,14 @@ func swap(vector []byte, index int) []byte {
 }
 
 func (v swapState) Id() interface{} {
-	return fmt.Sprintf("%q", v.vector)
+	return fmt.Sprintf("%v", v.vector)
 }
 
 func (v swapState) Expand() []State {
 	n := len(v.vector) - 1
 	steps := make([]State, n, n)
 	for i := 0; i < n; i++ {
-		steps[i] = swapState{swap(v.vector, i), v.cost + 1.0, i}
+		steps[i] = newSwapState(swap(v.vector, i), v.cost + 1.0, i)
 	}
 	return steps
 }
@@ -87,7 +95,6 @@ func printSolution(node Node) {
 }
 
 func main() {
-
 	f, err := os.Create("cpu.prof")
 	if err != nil {
 		log.Fatal(err)
@@ -95,9 +102,9 @@ func main() {
 	pprof.StartCPUProfile(f)
 	defer pprof.StopCPUProfile()
 
-	//state := swapState{[]byte{5, 4, 3, 2, 6, 1}, 0.0, -1}
-	state := dummyState(0.0)
-	solution := Solve(state, IDAstar, NO_RETURN, 20)
+	state := swapProblem([]byte{5, 4, 3, 6, 2, 1})
+	//state := dummyState(0.0)
+	solution := Solve(state, IDAstar, CHEAPEST_PATH, 20)
 	fmt.Printf("visited: %d, expanded %d\n", solution.Visited, solution.Expanded)
 	if !solution.Solution.Exists() {
 		fmt.Printf("No solution found\n")
