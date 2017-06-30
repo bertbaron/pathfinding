@@ -58,65 +58,39 @@ func (v swapState) Heuristic() float64 {
 	return 0.0
 }
 
-type dummyState float64
-
-func (v dummyState) Id() interface{} {
-	return v
-}
-
-func (v dummyState) Expand() []solve.State {
-	n := 5
-	steps := make([]solve.State, n, n)
-	for i := 0; i < n; i++ {
-		steps[i] = dummyState(v + 1.0)
-	}
-	return steps
-}
-
-func (v dummyState) IsGoal() bool {
-	return v >= 11
-}
-
-func (v dummyState) Cost() float64 {
-	return float64(v)
-}
-
-func (v dummyState) Heuristic() float64 {
-	return 0.0
-}
 func printSolution(node solve.Node) {
 	if !node.Exists() {
 		return
 	}
 	printSolution(node.Parent())
-	fmt.Println(node.State())
+	swapstate := node.State().(swapState)
+	for i, e := range swapstate.vector {
+		if i > 0 {
+			if i == swapstate.op + 1 {
+				fmt.Print("x")
+			} else {
+				fmt.Printf(" ")
+			}
+		}
+		fmt.Print(e)
+	}
+	fmt.Println()
 }
 
 func main() {
-	/*
-	f, err := os.Create("cpu.prof")
-	if err != nil {
-		log.Fatal(err)
-	}
-	pprof.StartCPUProfile(f)
-	defer pprof.StopCPUProfile()
-	*/
+	state := swapProblem([]byte{5, 7, 4, 3, 6, 2, 1})
+	fmt.Printf("Sorting %v in minimal number of swaps of neighbouring elements\n", state)
+	solution := solve.NewSolver(state).
+		Algorithm(solve.IDAstar).
+		Constraint(solve.CHEAPEST_PATH).
+		Limit(20).
+		Solve()
 
-	state := swapProblem([]byte{5, 4, 3, 6, 2, 1})
-	//state := dummyState(0.0)
-	solution := solve.NewSolver(state).Algorithm(solve.IDAstar).Constraint(solve.CHEAPEST_PATH).Limit(20).Solve()
 	fmt.Printf("visited: %d, expanded %d\n", solution.Visited, solution.Expanded)
 	if !solution.Solution.Exists() {
 		fmt.Printf("No solution found\n")
 	} else {
 		fmt.Printf("Solution found in %.0f steps\n", solution.Solution.State().Cost())
-		//printSolution(solution.Solution)
+		printSolution(solution.Solution)
 	}
-
-	//f, err = os.Create("mem.prof")
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//pprof.WriteHeapProfile(f)
-	//f.Close()
 }
