@@ -1,5 +1,5 @@
 .idea
 *.iml
-pathfinding
-pathfinding.exe
+swapsort
+swapsort.exe
 *.prof

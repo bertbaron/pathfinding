@@ -2,9 +2,7 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"log"
-	"runtime/pprof"
+	"github.com/bertbaron/pathfinding"
 )
 
 type swapState struct {
@@ -33,9 +31,9 @@ func (v swapState) Id() interface{} {
 	return fmt.Sprintf("%v", v.vector)
 }
 
-func (v swapState) Expand() []State {
+func (v swapState) Expand() []pathfinding.State {
 	n := len(v.vector) - 1
-	steps := make([]State, n, n)
+	steps := make([]pathfinding.State, n, n)
 	for i := 0; i < n; i++ {
 		steps[i] = newSwapState(swap(v.vector, i), v.cost + 1.0, i)
 	}
@@ -66,9 +64,9 @@ func (v dummyState) Id() interface{} {
 	return v
 }
 
-func (v dummyState) Expand() []State {
+func (v dummyState) Expand() []pathfinding.State {
 	n := 5
-	steps := make([]State, n, n)
+	steps := make([]pathfinding.State, n, n)
 	for i := 0; i < n; i++ {
 		steps[i] = dummyState(v + 1.0)
 	}
@@ -86,7 +84,7 @@ func (v dummyState) Cost() float64 {
 func (v dummyState) Heuristic() float64 {
 	return 0.0
 }
-func printSolution(node Node) {
+func printSolution(node pathfinding.Node) {
 	if !node.Exists() {
 		return
 	}
@@ -95,16 +93,18 @@ func printSolution(node Node) {
 }
 
 func main() {
+	/*
 	f, err := os.Create("cpu.prof")
 	if err != nil {
 		log.Fatal(err)
 	}
 	pprof.StartCPUProfile(f)
 	defer pprof.StopCPUProfile()
+	*/
 
 	state := swapProblem([]byte{5, 4, 3, 6, 2, 1})
 	//state := dummyState(0.0)
-	solution := Solve(state, IDAstar, CHEAPEST_PATH, 20)
+	solution := pathfinding.NewSolver(state).Algorithm(pathfinding.IDAstar).Constraint(pathfinding.CHEAPEST_PATH).Limit(20).Solve()
 	fmt.Printf("visited: %d, expanded %d\n", solution.Visited, solution.Expanded)
 	if !solution.Solution.Exists() {
 		fmt.Printf("No solution found\n")
@@ -113,10 +113,10 @@ func main() {
 		//printSolution(solution.Solution)
 	}
 
-	f, err = os.Create("mem.prof")
-	if err != nil {
-		log.Fatal(err)
-	}
-	pprof.WriteHeapProfile(f)
-	f.Close()
+	//f, err = os.Create("mem.prof")
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//pprof.WriteHeapProfile(f)
+	//f.Close()
 }
