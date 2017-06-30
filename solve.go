@@ -4,11 +4,24 @@ import (
 	"math"
 )
 
+// The State representing a state in the search tree
+//
+// An implementation of this interface represents the problem. It tells the algorithm how
+// to get from one state to another, how much it costs to reach the state etc.
 type State interface {
+	// The costs to reach this state
 	Cost() float64
+	// Returns true if this is a goal state
 	IsGoal() bool
+	// Expands this state in zero or more child states
 	Expand() []State
+	// Estimated costs to reach a goal. Use 0 for no heuristic. Most algorithms will find the optimal
+	// solution if the heuristic is admissable, meaning it will never over-estimate the costs to reach a goal
 	Heuristic() float64
+	// Returns an id that is used in constraints to reduce the search tree by eliminating identical states. Can
+	// be nil if no constraint is used.
+	// The result must be comparable (like go map keys), which unfortunately most notably excludes
+	// slices
 	Id() interface{}
 }
 
