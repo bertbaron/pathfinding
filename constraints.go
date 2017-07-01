@@ -3,7 +3,6 @@ package solve
 import (
 	"math"
 	"fmt"
-	"container/heap"
 )
 
 type Constraint int
@@ -29,17 +28,6 @@ func (c Constraint) String() string {
 type iconstraint interface {
 	onVisit(node *node) bool
 	onExpand(node *node) bool
-}
-
-func aStar() strategy {
-	pq := make(priorityQueue, 0, 64)
-	heap.Init(&pq)
-	return &pq
-}
-
-func depthFirst() strategy {
-	queue := make(lifo, 0, 64)
-	return &queue
 }
 
 // value is irrelevant

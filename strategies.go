@@ -26,7 +26,7 @@ type strategy interface {
 	Add(node *node)
 }
 
-// A PriorityQueue implements heap.Interface and holds Nodes
+// A* strategy, based on a priority queue
 type priorityQueue []*node
 
 func (pq priorityQueue) Len() int {
@@ -54,7 +54,6 @@ func (pq *priorityQueue) Pop() interface{} {
 	return item
 }
 
-// strategy
 func (pq *priorityQueue) Take() *node {
 	if len(*pq) == 0 {
 		return nil
@@ -62,11 +61,11 @@ func (pq *priorityQueue) Take() *node {
 	return heap.Pop(pq).(*node)
 }
 
-// strategy
 func (pq *priorityQueue) Add(node *node) {
 	heap.Push(pq, node)
 }
 
+// Depth-first strategy, based on a lifo queue
 type lifo []*node
 
 func (dfq *lifo) Take() *node {
@@ -82,4 +81,39 @@ func (dfq *lifo) Take() *node {
 
 func (dfq *lifo) Add(node *node) {
 	*dfq = append(*dfq, node)
+}
+
+// Breadth-first strategy, based on a fifo queue
+// We might replace this with a ring-buffer for performance
+type fifo []*node
+
+func (bfq *fifo) Take() *node {
+	if len(*bfq) == 0 {
+		return nil
+	}
+	old := *bfq
+	n := len(old)
+	item := old[0]
+	*bfq = old[1 : n]
+	return item
+}
+
+func (bfq *fifo) Add(node *node) {
+	*bfq = append(*bfq, node)
+}
+
+func aStar() strategy {
+	pq := make(priorityQueue, 0, 64)
+	heap.Init(&pq)
+	return &pq
+}
+
+func depthFirst() strategy {
+	queue := make(lifo, 0, 64)
+	return &queue
+}
+
+func breadthFirst() strategy {
+	queue := make(fifo, 0, 64)
+	return &queue
 }

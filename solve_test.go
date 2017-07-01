@@ -22,6 +22,7 @@ type state struct {
 	node  string
 	cost  float64
 }
+
 func create(graph graph) state {
 	return state{graph, "a", 0.0}
 }
@@ -67,7 +68,7 @@ func testSolve(t *testing.T, graph graph, algorithm Algorithm, constraint Constr
 		t.Errorf("%v - Expected %v, but no solution found", name, solution)
 		return
 	}
-	actual := result.Solution[len(result.Solution) -1]
+	actual := result.Solution[len(result.Solution) - 1]
 	state := actual.(state)
 	if state.node != solution {
 		t.Errorf("%v - Expected %v, but found %v", name, solution, state.node)
@@ -80,7 +81,7 @@ func testSolve(t *testing.T, graph graph, algorithm Algorithm, constraint Constr
 }
 
 // Solves the problem with all algorithms and constraints that should return in the optimal solution
-func testSolveAllAlgorithms(t *testing.T, graph graph, solution string, costs float64) {
+func testSolveAllAlgorithms(t *testing.T, graph graph, includeBF bool, solution string, costs float64) {
 	testSolve(t, graph, Astar, NONE, math.MaxFloat64, solution, costs)
 	testSolve(t, graph, Astar, NO_RETURN, math.MaxFloat64, solution, costs)
 	testSolve(t, graph, Astar, NO_LOOP, math.MaxFloat64, solution, costs)
@@ -95,13 +96,21 @@ func testSolveAllAlgorithms(t *testing.T, graph graph, solution string, costs fl
 	testSolve(t, graph, DepthFirst, NO_RETURN, costs, solution, costs)
 	testSolve(t, graph, DepthFirst, NO_LOOP, costs, solution, costs)
 	testSolve(t, graph, DepthFirst, CHEAPEST_PATH, costs, solution, costs)
+
+	// BF is only optimal if the length of costs corresonds with the length of the path
+	if includeBF {
+		testSolve(t, graph, BreadthFirst, NONE, math.MaxFloat64, solution, costs)
+		testSolve(t, graph, BreadthFirst, NO_RETURN, math.MaxFloat64, solution, costs)
+		testSolve(t, graph, BreadthFirst, NO_LOOP, math.MaxFloat64, solution, costs)
+		testSolve(t, graph, BreadthFirst, CHEAPEST_PATH, math.MaxFloat64, solution, costs)
+	}
 }
 
 func TestSimpleProblem(t *testing.T) {
 	g := make(graph)
 	g["a"] = []edge{{"b", 1}, {"c", 1}}
 	g["b"] = []edge{{"D", 1}, {"c", 1}}
-	testSolveAllAlgorithms(t, g, "D", 2)
+	testSolveAllAlgorithms(t, g, true, "D", 2)
 }
 
 func TestOptimalEvenIfPathLooksBad(t *testing.T) {
@@ -113,5 +122,5 @@ func TestOptimalEvenIfPathLooksBad(t *testing.T) {
 	g["bb"] = []edge{{"B", 200}}
 	g["cc"] = []edge{{"C", 100}}
 	g["dd"] = []edge{{"D", 1}}
-	testSolveAllAlgorithms(t, g, "D", 21)
+	testSolveAllAlgorithms(t, g, false, "D", 21)
 }

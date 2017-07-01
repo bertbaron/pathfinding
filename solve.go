@@ -118,6 +118,7 @@ func solve(ss solver) Result {
 	switch ss.algorithm {
 	case Astar: s = aStar()
 	case DepthFirst: s = depthFirst()
+	case BreadthFirst: s = breadthFirst()
 	}
 	s.Add(&node{nil, ss.rootState, ss.rootState.Cost() + ss.rootState.Heuristic()})
 
