@@ -25,14 +25,8 @@ type State interface {
 	Id() interface{}
 }
 
-type Node interface {
-	Parent() Node
-	State() State
-	Exists() bool
-}
-
 type Result struct {
-	Solution Node
+	Solution []State
 	Visited  int
 	Expanded int
 }
@@ -41,18 +35,6 @@ type node struct {
 	parent *node
 	state  State
 	value  float64
-}
-
-func (node node) Parent() Node {
-	return node.parent
-}
-
-func (node node) State() State {
-	return node.state
-}
-
-func (node *node) Exists() bool {
-	return node != nil
 }
 
 type result struct {
@@ -114,10 +96,23 @@ func idaStar(rootState State, constraint Constraint, limit float64) result {
 	panic("Shouldn't be reached")
 }
 
+func toSlice(node *node) []State {
+	x := make([]State, 0)
+	for node != nil {
+		x = append(x, node.state)
+		node = node.parent
+	}
+	y := make([]State, len(x), len(x))
+	for i, state := range x {
+		y[len(x)-i-1] = state
+	}
+	return y
+}
+
 func solve(ss solver) Result {
 	if ss.algorithm == IDAstar {
 		result := idaStar(ss.rootState, ss.constraint, ss.limit)
-		return Result{result.node, result.visited, result.expanded}
+		return Result{toSlice(result.node), result.visited, result.expanded}
 	}
 	var s strategy
 	switch ss.algorithm {
@@ -127,7 +122,7 @@ func solve(ss solver) Result {
 	s.Add(&node{nil, ss.rootState, ss.rootState.Cost() + ss.rootState.Heuristic()})
 
 	result := generalSearch(s, 0, 0, createConstraint(ss.constraint), ss.limit)
-	return Result{result.node, result.visited, result.expanded}
+	return Result{toSlice(result.node), result.visited, result.expanded}
 }
 
 type Solver interface {

@@ -52,7 +52,7 @@ func (c noLoopConstraint) onExpand(node *node) bool {
 }
 
 func (c noLoopConstraint) onVisit(node *node) bool {
-	id := node.State().Id()
+	id := node.state.Id()
 	ancestor := node.parent
 	for i := 0; i < int(c); i++ {
 		if ancestor == nil {
