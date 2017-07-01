@@ -31,8 +31,12 @@ type swapState struct {
 	op      int
 }
 
+func asSlice(s swapState)  []byte {
+	return s.vector[0:s.context.size]
+}
+
 func (s swapState) String() string {
-	return fmt.Sprintf("%v, %d", s.vector[0:s.context.size], s.op)
+	return fmt.Sprintf("%v, %d", asSlice(s), s.op)
 }
 
 func newSwapState(context *swapContext, vector [N]byte, cost float64, op int) swapState {
@@ -103,7 +107,7 @@ func printSolution(node solve.Node) {
 	}
 	printSolution(node.Parent())
 	swapstate := node.State().(swapState)
-	for i, e := range swapstate.vector[0:swapstate.context.size] {
+	for i, e := range asSlice(swapstate) {
 		if i > 0 {
 			if i == swapstate.op + 1 {
 				fmt.Print("x")
@@ -117,7 +121,7 @@ func printSolution(node solve.Node) {
 }
 
 func main() {
-	state := swapProblem([]byte{7, 6, 5, 4, 3, 2, 1, 0})
+	state := swapProblem([]byte{8, 7, 6, 5, 4, 3, 2, 1, 0})
 	fmt.Printf("Sorting %v in minimal number of swaps of neighbouring elements\n", state)
 	solution := solve.NewSolver(state).
 		Algorithm(solve.IDAstar).
