@@ -15,6 +15,16 @@ const (
 	CHEAPEST_PATH Constraint = iota
 )
 
+func (c Constraint) String() string {
+	switch c {
+	case NONE: return "None"
+	case NO_RETURN: return "No_return"
+	case NO_LOOP: return "No_loop"
+	case CHEAPEST_PATH: return "Cheapest_path"
+	}
+	return "<unknown>"
+}
+
 // A possibly mutable constraint, returns true if a node is constraint, so it should not be expanded further.
 type iconstraint interface {
 	onVisit(node *node) bool

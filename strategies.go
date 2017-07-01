@@ -11,6 +11,16 @@ const (
 	IDAstar Algorithm = iota
 )
 
+func (a Algorithm) String() string {
+	switch a {
+	case Astar: return "A*"
+	case IDAstar: return "IDA*"
+	case BreadthFirst: return "BreadthFirst"
+	case DepthFirst: return "DepthFirst"
+	}
+	return "<unknown>"
+}
+
 type strategy interface {
 	Take() *node
 	Add(node *node)
