@@ -39,7 +39,7 @@ type Result struct {
 	Solution []State
 	// Number of nodes visited (dequeued) by the algorithm
 	Visited  int
-	// Number of nodes exapnded (enqueued) by the algorithm
+	// Number of nodes expanded (enqueued) by the algorithm
 	Expanded int
 }
 
