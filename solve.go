@@ -20,8 +20,7 @@ type State interface {
 	Heuristic() float64
 	// Returns an id that is used in constraints to reduce the search tree by eliminating identical states. Can
 	// be nil if no constraint is used.
-	// The result must be comparable (like go map keys), which unfortunately most notably excludes
-	// slices
+	// The result must be comparable (like go map keys), which unfortunately most notably excludes slices
 	Id() interface{}
 }
 
@@ -96,16 +95,10 @@ func idaStar(rootState State, constraint Constraint, limit float64) result {
 }
 
 func toSlice(node *node) []State {
-	x := make([]State, 0)
-	for node != nil {
-		x = append(x, node.state)
-		node = node.parent
+	if node == nil {
+		return make([]State, 0)
 	}
-	y := make([]State, len(x), len(x))
-	for i, state := range x {
-		y[len(x) - i - 1] = state
-	}
-	return y
+	return append(toSlice(node.parent), node.state)
 }
 
 func solve(ss solver) Result {

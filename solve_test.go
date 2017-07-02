@@ -8,7 +8,7 @@ import (
 )
 
 /*
- Problem for testing modelled as a graph. The root node is always "a", and any node that starts with an uppercase
+ Problem for testing modelled as a graph. The root node is always "a" or "A", and any node that starts with an uppercase
  character is a goal.
  */
 
@@ -24,7 +24,11 @@ type state struct {
 }
 
 func create(graph graph) state {
-	return state{graph, "a", 0.0}
+	var root = "a"
+	if _, ok := graph[root]; !ok {
+		root = "A"
+	}
+	return state{graph, root, 0.0}
 }
 func expand(s state, edge edge) state {
 	return state{s.graph, edge.target, s.cost + edge.cost}
@@ -146,5 +150,16 @@ func TestIDAStarWithMaxFlaotContour(t *testing.T) {
 		Solve()
 	if len(result.Solution) != 0 {
 		t.Error("Expected no solution, but found one")
+	}
+}
+
+func TestWithSingleStateResult(t *testing.T) {
+	g := make(graph)
+	g["A"] = []edge{}
+	result := NewSolver(create(g)).
+		Algorithm(IDAstar).
+		Solve()
+	if (len(result.Solution) != 1) {
+		t.Errorf("Expected solution in one step, but found %v", len(result.Solution))
 	}
 }
