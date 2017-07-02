@@ -10,25 +10,32 @@ import (
 // An implementation of this interface represents the problem. It tells the algorithm how
 // to get from one state to another, how much it costs to reach the state etc.
 type State interface {
+
 	// The costs to reach this state
 	Cost() float64
+
 	// Returns true if this is a goal state
 	IsGoal() bool
+
 	// Expands this state in zero or more child states
 	Expand() []State
-	// Estimated costs to reach a goal. Use 0 for no heuristic. Most algorithms will find the optimal
-	// solution if the heuristic is admissable, meaning it will never over-estimate the costs to reach a goal
+
+	// Estimated costs to reach a goal. Use 0 for no heuristic. Most algorithms will
+	// find the optimal solution if the heuristic is admissable, meaning it will never
+	// over-estimate the costs to reach a goal
 	Heuristic() float64
-	// Returns an id that is used in constraints to reduce the search tree by eliminating identical states. Can
-	// be nil if no constraint is used.
-	// The result must be comparable (like go map keys), which unfortunately most notably excludes slices
+
+	// Returns an id that is used in constraints to reduce the search tree by
+	// eliminating identical states. Can be nil if no constraint is used.
+
+	// The result must be comparable (like go map keys)
 	Id() interface{}
 }
 
 // The result of the search
 type Result struct {
-	// The list of states leading from the root state to the goal state. If no solution is found this list will be
-	// empty
+	// The list of states leading from the root state to the goal state. If no solution
+	// is found this list will be empty
 	Solution []State
 	// Number of nodes visited (dequeued) by the algorithm
 	Visited  int
@@ -132,12 +139,17 @@ func solve(ss solver) Result {
 //          Constraint(solve.NO_LOOP).
 //          Solve()
 type Solver interface {
+
 	// The algorithm to use, defaults to IDAstar
 	Algorithm(algorithm Algorithm) Solver
+
 	// The constraint to use, defaults to NONE
 	Constraint(constraint Constraint) Solver
-	// The limit to use. The problem will not be exanded beyond this limit. Defaults to math.Inf(1).
+
+	// The limit to use. The problem will not be exanded beyond this limit. Defaults
+	// to math.Inf(1).
 	Limit(limit float64) Solver
+
 	// Solves the problem returning the result
 	Solve() Result
 }
