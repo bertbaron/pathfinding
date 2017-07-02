@@ -37,11 +37,14 @@ type State interface {
 
 // The result of the search
 type Result struct {
+
 	// The list of states leading from the root state to the goal state. If no solution
 	// is found this list will be empty
 	Solution []State
+
 	// Number of nodes visited (dequeued) by the algorithm
 	Visited  int
+
 	// Number of nodes expanded (enqueued) by the algorithm
 	Expanded int
 }
