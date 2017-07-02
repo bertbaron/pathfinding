@@ -27,7 +27,10 @@ type State interface {
 
 	// Returns an id that is used in constraints to reduce the search tree by
 	// eliminating identical states. Can be nil if no constraint is used.
-
+	//
+	// Symmetrical states may return the same Id to eliminate even more branches of the
+	// search tree
+	//
 	// The result must be comparable (like go map keys)
 	Id() interface{}
 }
