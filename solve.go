@@ -45,7 +45,7 @@ type result struct {
 }
 
 func generalSearch(queue strategy, visited int, expanded int, constr iconstraint, limit float64) result {
-	contour := math.MaxFloat64
+	contour := math.Inf(1)
 
 	for {
 		n := queue.Take()
@@ -82,11 +82,10 @@ func idaStar(rootState State, constraint Constraint, limit float64) result {
 	expanded := 0
 	contour := 0.0
 	for true {
-		// TODO doesn't stop when contour is infinity when there is no limit?
 		s := depthFirst()
 		s.Add(&node{nil, rootState, rootState.Cost() + rootState.Heuristic()})
 		lastResult := generalSearch(s, visited, expanded, createConstraint(constraint), contour)
-		if lastResult.node != nil || lastResult.contour > limit {
+		if lastResult.node != nil || lastResult.contour > limit || math.IsInf(lastResult.contour, 1) || math.IsNaN(lastResult.contour) {
 			return lastResult
 		}
 		visited = lastResult.visited
@@ -104,7 +103,7 @@ func toSlice(node *node) []State {
 	}
 	y := make([]State, len(x), len(x))
 	for i, state := range x {
-		y[len(x)-i-1] = state
+		y[len(x) - i - 1] = state
 	}
 	return y
 }

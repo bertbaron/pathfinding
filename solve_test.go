@@ -124,3 +124,15 @@ func TestOptimalEvenIfPathLooksBad(t *testing.T) {
 	g["dd"] = []edge{{"D", 1}}
 	testSolveAllAlgorithms(t, g, false, "D", 21)
 }
+
+func TestIDAStarWithInfinitContour(t *testing.T) {
+	g := make(graph)
+	g["a"] = []edge{{"b", math.Inf(1)}}
+
+	result := NewSolver(create(g)).
+		Algorithm(IDAstar).
+		Solve()
+	if len(result.Solution) != 0 {
+		t.Error("Expected no solution, but found one")
+	}
+}
