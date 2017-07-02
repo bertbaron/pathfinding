@@ -136,3 +136,15 @@ func TestIDAStarWithInfinitContour(t *testing.T) {
 		t.Error("Expected no solution, but found one")
 	}
 }
+
+func TestIDAStarWithMaxFlaotContour(t *testing.T) {
+	g := make(graph)
+	g["a"] = []edge{{"b", math.MaxFloat64}}
+
+	result := NewSolver(create(g)).
+		Algorithm(IDAstar).
+		Solve()
+	if len(result.Solution) != 0 {
+		t.Error("Expected no solution, but found one")
+	}
+}
