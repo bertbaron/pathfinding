@@ -1,3 +1,4 @@
+// Generic problem solving library with algorithms like A*, IDA*, Depth-first etc.
 package solve
 
 import (
@@ -24,9 +25,14 @@ type State interface {
 	Id() interface{}
 }
 
+// The result of the search
 type Result struct {
+	// The list of states leading from the root state to the goal state. If no solution is found this list will be
+	// empty
 	Solution []State
+	// Number of nodes visited (dequeued) by the algorithm
 	Visited  int
+	// Number of nodes exapnded (enqueued) by the algorithm
 	Expanded int
 }
 
@@ -118,10 +124,21 @@ func solve(ss solver) Result {
 	return Result{toSlice(result.node), result.visited, result.expanded}
 }
 
+// Solver to solve the problem.
+//
+// Usage example:
+//  result := solve.NewSolver(puzzle).
+//          Algorithm(solve.IDAstar).
+//          Constraint(solve.NO_LOOP).
+//          Solve()
 type Solver interface {
+	// The algorithm to use, defaults to IDAstar
 	Algorithm(algorithm Algorithm) Solver
+	// The constraint to use, defaults to NONE
 	Constraint(constraint Constraint) Solver
+	// The limit to use. The problem will not be exanded beyond this limit. Defaults to math.Inf(1).
 	Limit(limit float64) Solver
+	// Solves the problem returning the result
 	Solve() Result
 }
 type solver struct {
@@ -150,6 +167,7 @@ func (s *solver) Solve() Result {
 	return solve(*s)
 }
 
+// Creates a new solver
 func NewSolver(rootState State) Solver {
 	return &solver{rootState, Astar, NONE, math.MaxFloat64}
 }
