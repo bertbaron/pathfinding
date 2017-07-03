@@ -196,9 +196,10 @@ func TestStatisticsWithDifferentConstraints(t *testing.T) {
 	g["b"] = []edge{{"c", 1}, {"d", 2}}
 	g["c"] = []edge{{"a", 1}, {"d", 1}}
 	g["d"] = []edge{{"E", 1}}
-	//testStatistics(t, g, Astar, NONE, 22, 12)
-	//testStatistics(t, g, Astar, NO_RETURN, 8, 6)
-	//testStatistics(t, g, Astar, NO_LOOP, 6, 5)
+	testStatistics(t, g, Astar, NONE, 27, 16) // currently the test depends on the queue implementation...
+	testStatistics(t, g, Astar, NO_RETURN, 8, 7)
+	testStatistics(t, g, Astar, NO_LOOP, 6, 6)
+	testStatistics(t, g, Astar, CHEAPEST_PATH, 4, 5)
 }
 
 type dummyState struct {
