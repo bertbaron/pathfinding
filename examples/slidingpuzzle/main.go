@@ -138,7 +138,7 @@ func manhattanDistance(w, h, x, y, value int) float64 {
 	if value == 0 {
 		return 0
 	}
-	xx, yy := value % w, value / w
+	xx, yy := (value - 1) % w, (value - 1) / w
 	return math.Abs(float64(xx - x)) + math.Abs(float64(yy - y))
 }
 
@@ -167,7 +167,7 @@ func main() {
 
 	//seed := time.Now().UnixNano()
 	var seed int64 = 3
-	puzzle := shuffle(seed, initPuzzle(3, 3), 1000)
+	puzzle := shuffle(seed, initPuzzle(4, 4), 1000)
 	fmt.Println("Solving the puzzle:")
 	fmt.Print(puzzle.draw())
 	fmt.Println()
