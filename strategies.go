@@ -1,6 +1,11 @@
 package solve
 
-import "container/heap"
+import (
+	"container/heap"
+	"fmt"
+	"strings"
+	"sort"
+)
 
 type Algorithm int
 
@@ -33,8 +38,22 @@ func (pq priorityQueue) Len() int {
 	return len(pq)
 }
 
+func compare(a,b float64) int {
+	if a < b {
+		return -1
+	}
+	if a > b {
+		return 1
+	}
+	return 0
+}
+
 func (pq priorityQueue) Less(i, j int) bool {
-	return pq[i].value < pq[j].value
+	diff := compare(pq[i].value, pq[j].value)
+	if diff == 0 {
+		diff = compare(pq[j].state.Cost(), pq[i].state.Cost())
+	}
+	return diff < 0
 }
 
 func (pq priorityQueue) Swap(i, j int) {
@@ -63,6 +82,16 @@ func (pq *priorityQueue) Take() *node {
 
 func (pq *priorityQueue) Add(node *node) {
 	heap.Push(pq, node)
+}
+
+func (pq priorityQueue) String() string {
+	copy := pq
+	sort.Sort(copy)
+	var ss []string
+	for _, item := range copy {
+		ss = append(ss, fmt.Sprintf("%v (%v)", item.state, item.value))
+	}
+	return strings.Join(ss, ", ")
 }
 
 // Depth-first strategy, based on a lifo queue

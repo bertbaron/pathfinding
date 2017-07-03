@@ -33,23 +33,22 @@ type iconstraint interface {
 // value is irrelevant
 type noConstraint bool
 
-func (c noConstraint) onExpand(node *node) bool {
-	return false
-}
-
 func (c noConstraint) onVisit(node *node) bool {
 	return false
 }
 
+func (c noConstraint) onExpand(node *node) bool {
+	return false
+}
 
 // value is the limit for looking back
 type noLoopConstraint int
 
-func (c noLoopConstraint) onExpand(node *node) bool {
+func (c noLoopConstraint) onVisit(node *node) bool {
 	return false
 }
 
-func (c noLoopConstraint) onVisit(node *node) bool {
+func (c noLoopConstraint) onExpand(node *node) bool {
 	id := node.state.Id()
 	ancestor := node.parent
 	for i := 0; i < int(c); i++ {

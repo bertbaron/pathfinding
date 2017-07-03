@@ -10,7 +10,6 @@ import (
 // An implementation of this interface represents the problem. It tells the algorithm how
 // to get from one state to another, how much it costs to reach the state etc.
 type State interface {
-
 	// The costs to reach this state
 	Cost() float64
 
@@ -37,7 +36,6 @@ type State interface {
 
 // The result of the search
 type Result struct {
-
 	// The list of states leading from the root state to the goal state. If no solution
 	// is found this list will be empty
 	Solution []State
@@ -145,7 +143,6 @@ func solve(ss solver) Result {
 //          Constraint(solve.NO_LOOP).
 //          Solve()
 type Solver interface {
-
 	// The algorithm to use, defaults to IDAstar
 	Algorithm(algorithm Algorithm) Solver
 

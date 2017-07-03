@@ -18,18 +18,18 @@ const (
 type direction byte
 
 const (
-	up direction = iota
-	down direction = iota
 	left direction = iota
+	up direction = iota
 	right direction = iota
+	down direction = iota
 )
 
 func (d direction) String() string {
 	switch d {
-	case up: return "↑"
-	case down: return "↓"
 	case left: return "←"
+	case up: return "↑"
 	case right: return "→"
+	case down: return "↓"
 	}
 	panic(fmt.Sprintf("Invalid direction: %d", d))
 }
@@ -166,14 +166,14 @@ func main() {
 	defer pprof.StopCPUProfile()
 
 	//seed := time.Now().UnixNano()
-	var seed int64 = 3
+	var seed int64 = 1
 	puzzle := shuffle(seed, initPuzzle(4, 4), 1000)
 	fmt.Println("Solving the puzzle:")
 	fmt.Print(puzzle.draw())
 	fmt.Println()
 	result := solve.NewSolver(puzzle).
 		Algorithm(solve.IDAstar).
-		Constraint(solve.NO_LOOP).
+		Constraint(solve.NO_RETURN).
 		Solve()
 	n := len(result.Solution)
 	if n == 0 {
@@ -184,6 +184,6 @@ func main() {
 			moves[i] = state.(puzzleState).dir.String()
 		}
 		fmt.Printf("Solution in %v steps: %s\n", result.Solution[n - 1].Cost(), strings.Join(moves, ", "))
-		fmt.Printf("visited %d nodes\n", result.Visited)
+		fmt.Printf("visited %d, expanded %d\n", result.Visited, result.Expanded)
 	}
 }

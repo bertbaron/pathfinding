@@ -22,6 +22,9 @@ type state struct {
 	node  string
 	cost  float64
 }
+func (s state) String() string {
+	return fmt.Sprintf("%v", s.node)
+}
 
 func create(graph graph) state {
 	var root = "a"
@@ -162,4 +165,81 @@ func TestWithSingleStateResult(t *testing.T) {
 	if (len(result.Solution) != 1) {
 		t.Errorf("Expected solution in one step, but found %v", len(result.Solution))
 	}
+}
+
+func testStatistics(t *testing.T, g graph, algorithm Algorithm, constraint Constraint, expExpanded, expVisited int) {
+	name := fmt.Sprintf("(%v,%v)", algorithm, constraint)
+	result := NewSolver(create(g)).
+		Algorithm(algorithm).
+		Constraint(constraint).
+		Solve()
+	if result.Visited != expVisited {
+		t.Errorf("%v - Expected %v nodes visited, but was %v", name, expVisited, result.Visited)
+	}
+	if result.Expanded != expExpanded {
+		t.Errorf("%v - Expected %v nodes expanded, but was %v", name, expExpanded, result.Expanded)
+	}
+}
+/*
+(deftest test-with-no-loop-constraint
+  (let [graph {:a  [[:a 1] [:b 1]]
+               :b  [[:c 1] [:d 2]]
+               :c  [[:a 1] [:d 1]]
+               :d  [[:E 1]]}]
+    (test-statistics graph :A* {:expanded 22 :visited 12})
+    (test-statistics graph :A* {:expanded  8 :visited  6} :constraint (no-return-constraint))
+    (test-statistics graph :A* {:expanded  6 :visited  5} :constraint (no-loop-constraint))))
+ */
+func TestStatisticsWithDifferentConstraints(t *testing.T) {
+	g := make(graph)
+	g["a"] = []edge{{"a", 1}, {"b", 1}}
+	g["b"] = []edge{{"c", 1}, {"d", 2}}
+	g["c"] = []edge{{"a", 1}, {"d", 1}}
+	g["d"] = []edge{{"E", 1}}
+	//testStatistics(t, g, Astar, NONE, 22, 12)
+	//testStatistics(t, g, Astar, NO_RETURN, 8, 6)
+	//testStatistics(t, g, Astar, NO_LOOP, 6, 5)
+}
+
+type dummyState struct {
+	State
+	name string
+}
+
+func (s dummyState) Id() interface{} {
+	return s.name
+}
+
+func dummyNode(parent *node, name string, costs float64) *node {
+	return &node{parent, dummyState{nil, name}, costs}
+}
+
+func TestNoLoopConstraint(t *testing.T) {
+	assert := func (name string, value, expected interface {}) {
+		if value != expected {
+			t.Errorf("%v - Expected %v, but was %v", name, expected, value)
+		}
+	}
+
+	c := noLoopConstraint(2)
+	a1 := dummyNode(nil, "a", 1)
+	assert("a1", c.onExpand(a1), false)
+	a2 := dummyNode(a1, "a", 1)
+	assert("same parent", c.onExpand(a2), true)
+
+
+	b1 := dummyNode(a1, "b", 1)
+	assert("b1", c.onExpand(b1), false)
+
+	// a - b - a
+	a3 := dummyNode(b1, "a", 1)
+	assert("same grandparent", c.onExpand(a3), true)
+
+	c1 := dummyNode(b1, "c", 1)
+	assert("c1", c.onExpand(c1), false)
+
+	// a - b - c - a
+	a4 := dummyNode(c1, "a", 1)
+	assert("same grandgrandparent", c.onExpand(a4), false)
+
 }
