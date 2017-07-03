@@ -184,5 +184,5 @@ func (s *solver) Solve() Result {
 
 // Creates a new solver
 func NewSolver(rootState State) Solver {
-	return &solver{rootState, Astar, NONE, math.MaxFloat64}
+	return &solver{rootState, Astar, NONE, math.Inf(1)}
 }
