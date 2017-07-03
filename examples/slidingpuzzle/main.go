@@ -6,9 +6,6 @@ import (
 	"math/rand"
 	"github.com/bertbaron/solve"
 	"math"
-	"os"
-	"log"
-	"runtime/pprof"
 )
 
 const (
@@ -158,13 +155,6 @@ func (p puzzleState) Id() interface{} {
 }
 
 func main() {
-	f, err := os.Create("cpu.prof")
-	if err != nil {
-		log.Fatal(err)
-	}
-	pprof.StartCPUProfile(f)
-	defer pprof.StopCPUProfile()
-
 	//seed := time.Now().UnixNano()
 	var seed int64 = 1
 	puzzle := shuffle(seed, initPuzzle(4, 4), 1000)
