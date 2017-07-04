@@ -45,7 +45,7 @@ func (s state) Heuristic() float64 {
 }
 
 // Sorts a vector in the minimum number of swaps of neighbouring elements
-func ExampleReverse() {
+func Example() {
 	s := state{[...]byte{3, 2, 5, 4, 1}, 0, -1}
 	result := solve.NewSolver(s).
 		Algorithm(solve.IDAstar).
