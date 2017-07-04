@@ -35,22 +35,8 @@ func (pq priorityQueue) Len() int {
 	return len(pq)
 }
 
-func compare(a, b float64) int {
-	if a < b {
-		return -1
-	}
-	if a > b {
-		return 1
-	}
-	return 0
-}
-
 func (pq priorityQueue) Less(i, j int) bool {
-	diff := compare(pq[i].value, pq[j].value)
-	//if diff == 0 {
-	//	diff = compare(pq[j].state.Cost(), pq[i].state.Cost())
-	//}
-	return diff < 0
+	return pq[i].value < pq[j].value
 }
 
 func (pq priorityQueue) Swap(i, j int) {

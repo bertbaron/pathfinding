@@ -299,3 +299,21 @@ func BenchmarkAStarStrategy(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkAStarStrategyDiscrete(b *testing.B) {
+	// for Astar we can not reuse the node, so this test involves more overhead
+	mknode := func(value float64) *node {
+		return &node{nil, nil, value}
+	}
+
+	r := rand.New(rand.NewSource(123))
+	for n := 0; n < b.N; n++ {
+		q := aStar()
+		for i:=0; i<1000000; i++ {
+			q.Add(mknode(float64(r.Intn(100))))
+			if i % 3 == 0 {
+				q.Take()
+			}
+		}
+	}
+}
