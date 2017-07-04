@@ -84,16 +84,6 @@ func (pq *priorityQueue) Add(node *node) {
 	heap.Push(pq, node)
 }
 
-func (pq priorityQueue) String() string {
-	copy := pq
-	sort.Sort(copy)
-	var ss []string
-	for _, item := range copy {
-		ss = append(ss, fmt.Sprintf("%v (%v)", item.state, item.value))
-	}
-	return strings.Join(ss, ", ")
-}
-
 // Depth-first strategy, based on a lifo queue
 type lifo []*node
 
