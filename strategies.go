@@ -38,7 +38,7 @@ func (pq priorityQueue) Len() int {
 	return len(pq)
 }
 
-func compare(a,b float64) int {
+func compare(a, b float64) int {
 	if a < b {
 		return -1
 	}
@@ -112,23 +112,53 @@ func (dfq *lifo) Add(node *node) {
 	*dfq = append(*dfq, node)
 }
 
-// Breadth-first strategy, based on a fifo queue
-// We might replace this with a ring-buffer for performance
-type fifo []*node
+// Inspired by github.com/phf/go-queue/queue, but we implement our own
+// because we only need part of the functionality and can make a sligtly
+// more efficient implementation without the need for an external dependency
+type ringbuffer struct {
+	buffer []*node
+	start  int
+	end    int
+	size   int
+}
 
-func (bfq *fifo) Take() *node {
-	if len(*bfq) == 0 {
+func inc(b *ringbuffer, i int) int {
+	return (i + 1) & (len(b.buffer) - 1) // requires l = 2^n
+}
+
+func (b *ringbuffer) Take() *node {
+	if b.size == 0 {
 		return nil
 	}
-	old := *bfq
-	n := len(old)
-	item := old[0]
-	*bfq = old[1 : n]
+	item := b.buffer[b.start]
+	b.start = inc(b, b.start)
+	b.size--
 	return item
 }
 
-func (bfq *fifo) Add(node *node) {
-	*bfq = append(*bfq, node)
+func (b *ringbuffer) Add(node *node) {
+	if b.size == len(b.buffer) {
+		grow(b)
+	}
+	b.buffer[b.end] = node
+	b.end = inc(b, b.end)
+	b.size++
+}
+
+func grow(b *ringbuffer) {
+	size := b.size * 2
+	adjusted := make([]*node, size)
+	if b.start < b.end {
+		// not "wrapped" around, one copy suffices
+		copy(adjusted, b.buffer[b.start:b.end])
+	} else {
+		// "wrapped" around, need two copies
+		n := copy(adjusted, b.buffer[b.start:])
+		copy(adjusted[n:], b.buffer[:b.end])
+	}
+	b.buffer = adjusted
+	b.start = 0
+	b.end = b.size
 }
 
 func aStar() strategy {
@@ -143,6 +173,7 @@ func depthFirst() strategy {
 }
 
 func breadthFirst() strategy {
-	queue := make(fifo, 0, 64)
-	return &queue
+	var b ringbuffer
+	b.buffer = make([]*node, 64)
+	return &b
 }

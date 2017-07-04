@@ -242,5 +242,40 @@ func TestNoLoopConstraint(t *testing.T) {
 	// a - b - c - a
 	a4 := dummyNode(c1, "a", 1)
 	assert("same grandgrandparent", c.onExpand(a4), false)
+}
 
+func TestRingbuffer(t *testing.T) {
+	mknode := func(i int) *node {
+		return &node{nil, nil, float64(i)}
+	}
+	b := breadthFirst()
+	lastTaken := -1
+	for i:=0; i<1000; i++ {
+		b.Add(mknode(i))
+		if i % 3 == 0 {
+			taken := b.Take()
+			if taken == nil {
+				t.Errorf("Expected node %v at head of the buffer, but the buffer was empty", lastTaken + 1)
+				return
+			}
+			if (int(taken.value) != lastTaken + 1) {
+				t.Errorf("Expected element %v from the buffer, but was %v", lastTaken + 1, taken.value)
+				return
+			}
+			lastTaken = int(taken.value)
+		}
+	}
+}
+
+func BenchmarkBreadthFirstStrategy(b *testing.B) {
+	node := &node{nil, nil, 0}
+	for n := 0; n < b.N; n++ {
+		b := breadthFirst()
+		for i:=0; i<3000000; i++ {
+			b.Add(node)
+			if i % 3 == 0 {
+				b.Take()
+			}
+		}
+	}
 }

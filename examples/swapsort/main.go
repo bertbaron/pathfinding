@@ -124,14 +124,14 @@ func main() {
 	fmt.Printf("Sorting %v in minimal number of swaps of neighbouring elements\n", state)
 	solution := solve.NewSolver(state).
 		Algorithm(solve.IDAstar).
-		Constraint(solve.CHEAPEST_PATH).Limit(5).
+		Constraint(solve.CHEAPEST_PATH).
 		Solve()
 
 	fmt.Printf("visited: %d, expanded %d\n", solution.Visited, solution.Expanded)
 	if len(solution.Solution) == 0 {
 		fmt.Printf("No solution found\n")
 	} else {
-		fmt.Printf("Solution found in %.0f steps\n", len(solution.Solution))
+		fmt.Printf("Solution found in %v steps\n", len(solution.Solution))
 		printSolution(solution.Solution)
 	}
 }
