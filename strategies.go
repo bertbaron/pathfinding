@@ -47,9 +47,9 @@ func compare(a, b float64) int {
 
 func (pq priorityQueue) Less(i, j int) bool {
 	diff := compare(pq[i].value, pq[j].value)
-	if diff == 0 {
-		diff = compare(pq[j].state.Cost(), pq[i].state.Cost())
-	}
+	//if diff == 0 {
+	//	diff = compare(pq[j].state.Cost(), pq[i].state.Cost())
+	//}
 	return diff < 0
 }
 

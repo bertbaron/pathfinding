@@ -5,6 +5,7 @@ import (
 	"testing"
 	"math"
 	"fmt"
+	"math/rand"
 )
 
 /*
@@ -268,6 +269,7 @@ func TestRingbuffer(t *testing.T) {
 }
 
 func BenchmarkBreadthFirstStrategy(b *testing.B) {
+	// for breadthfirst we can reuse the node, reducing overhead
 	node := &node{nil, nil, 0}
 	for n := 0; n < b.N; n++ {
 		b := breadthFirst()
@@ -275,6 +277,24 @@ func BenchmarkBreadthFirstStrategy(b *testing.B) {
 			b.Add(node)
 			if i % 3 == 0 {
 				b.Take()
+			}
+		}
+	}
+}
+
+func BenchmarkAStarStrategy(b *testing.B) {
+	// for Astar we can not reuse the node, so this test involves more overhead
+	mknode := func(value float64) *node {
+		return &node{nil, nil, value}
+	}
+
+	r := rand.New(rand.NewSource(123))
+	for n := 0; n < b.N; n++ {
+		q := aStar()
+		for i:=0; i<1000000; i++ {
+			q.Add(mknode(r.Float64()))
+			if i % 3 == 0 {
+				q.Take()
 			}
 		}
 	}
