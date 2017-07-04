@@ -2,9 +2,6 @@ package solve
 
 import (
 	"container/heap"
-	"fmt"
-	"strings"
-	"sort"
 )
 
 type Algorithm int
