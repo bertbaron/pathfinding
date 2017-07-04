@@ -44,7 +44,8 @@ func (s state) Heuristic() float64 {
 	return 0
 }
 
-// Sorts a vector in the minimum number of swaps of neighbouring elements
+// Finds the minumum number of swaps of neighbouring elements required to
+// sort a vector
 func Example() {
 	s := state{[...]byte{3, 2, 5, 4, 1}, 0, -1}
 	result := solve.NewSolver(s).
