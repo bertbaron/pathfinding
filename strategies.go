@@ -119,7 +119,6 @@ type ringbuffer struct {
 	buffer []*node
 	start  int
 	end    int
-	size   int
 }
 
 func inc(b *ringbuffer, i int) int {
@@ -127,26 +126,25 @@ func inc(b *ringbuffer, i int) int {
 }
 
 func (b *ringbuffer) Take() *node {
-	if b.size == 0 {
+	if b.start == b.end {
 		return nil
 	}
 	item := b.buffer[b.start]
 	b.start = inc(b, b.start)
-	b.size--
 	return item
 }
 
 func (b *ringbuffer) Add(node *node) {
-	if b.size == len(b.buffer) {
-		grow(b)
-	}
 	b.buffer[b.end] = node
 	b.end = inc(b, b.end)
-	b.size++
+	if b.start == b.end {
+		grow(b)
+	}
 }
 
 func grow(b *ringbuffer) {
-	size := b.size * 2
+	oldsize := len(b.buffer)
+	size := oldsize * 2
 	adjusted := make([]*node, size)
 	if b.start < b.end {
 		// not "wrapped" around, one copy suffices
@@ -158,7 +156,7 @@ func grow(b *ringbuffer) {
 	}
 	b.buffer = adjusted
 	b.start = 0
-	b.end = b.size
+	b.end = oldsize
 }
 
 func aStar() strategy {
