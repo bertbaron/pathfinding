@@ -50,7 +50,7 @@ func Example() {
 	s := state{[...]byte{3, 2, 5, 4, 1}, 0, -1}
 	result := solve.NewSolver(s).
 		Algorithm(solve.IDAstar).
-		Constraint(solve.CHEAPEST_PATH).
+		Constraint(solve.NO_LOOP).
 		Solve()
 	for _, st := range result.Solution {
 		fmt.Printf("%v\n", st.(state).vector)
