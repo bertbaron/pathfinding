@@ -6,8 +6,11 @@ import (
 )
 
 type state struct {
+	// the state of the vector
 	vector [5]byte
+	// the cost to get to this state
 	cost   int
+	// index of the element that was swapped with its right neigbour
 	index  int
 }
 
@@ -19,17 +22,16 @@ func (s state) Expand() []solve.State {
 	n := len(s.vector) - 1
 	steps := make([]solve.State, n, n)
 	for i := 0; i < n; i++ {
-		child := state{s.vector, s.cost + 1, i}
-		child.vector[i], child.vector[i + 1] = child.vector[i + 1], child.vector[i]
-		steps[i] = child
+		copy := s.vector
+		copy[i], copy[i + 1] = copy[i + 1], copy[i]
+		steps[i] = state{copy, s.cost + 1, i}
 	}
 	return steps
 }
 
 func (s state) IsGoal() bool {
-	n := len(s.vector) - 1
-	for i := 0; i < n; i++ {
-		if s.vector[i] > s.vector[i + 1] {
+	for i := 1; i < len(s.vector); i++ {
+		if s.vector[i - 1] > s.vector[i] {
 			return false
 		}
 	}
