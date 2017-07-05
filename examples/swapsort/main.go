@@ -6,7 +6,7 @@ import (
 	"sort"
 )
 
-const max_size = 16
+const maxSize = 16
 
 type sortBytes []byte
 
@@ -22,12 +22,12 @@ func (b sortBytes) Swap(i, j int) {
 
 type swapContext struct {
 	size int
-	goal [max_size]byte
+	goal [maxSize]byte
 }
 
 type swapState struct {
 	context *swapContext
-	vector  [max_size]byte
+	vector  [maxSize]byte
 	cost    float64
 	op      int
 }
@@ -40,15 +40,15 @@ func (s swapState) String() string {
 	return fmt.Sprintf("%v, %d", asSlice(s), s.op)
 }
 
-func newSwapState(context *swapContext, vector [max_size]byte, cost float64, op int) swapState {
+func newSwapState(context *swapContext, vector [maxSize]byte, cost float64, op int) swapState {
 	return swapState{context, vector, cost, op}
 }
 
 func swapProblem(initialState []byte) swapState {
-	if len(initialState) > max_size {
-		panic(fmt.Sprintf("Maximum size of vector is %v, but found %v", max_size, len(initialState)))
+	if len(initialState) > maxSize {
+		panic(fmt.Sprintf("Maximum size of vector is %v, but found %v", maxSize, len(initialState)))
 	}
-	var array [max_size]byte
+	var array [maxSize]byte
 	for i, v := range initialState {
 		array[i] = v
 	}
@@ -59,7 +59,7 @@ func swapProblem(initialState []byte) swapState {
 }
 
 // returns a copy of the given vector, where the element at index is swapped with its right neighbour
-func swap(vector [max_size]byte, index int) [max_size]byte {
+func swap(vector [maxSize]byte, index int) [maxSize]byte {
 	vector[index], vector[index+1] = vector[index+1], vector[index]
 	return vector
 }

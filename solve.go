@@ -178,5 +178,5 @@ func (s *solver) Solve() Result {
 
 // NewSolver creates a new solver
 func NewSolver(rootState State) Solver {
-	return &solver{rootState, Astar, NONE, math.Inf(1)}
+	return &solver{rootState, Astar, NO_CONSTRAINT, math.Inf(1)}
 }

@@ -91,24 +91,24 @@ func testSolve(t *testing.T, graph graph, algorithm Algorithm, constraint Constr
 
 // Solves the problem with all algorithms and constraints that should return in the optimal solution
 func testSolveAllAlgorithms(t *testing.T, graph graph, includeBF bool, solution string, costs float64) {
-	testSolve(t, graph, Astar, NONE, math.MaxFloat64, solution, costs)
+	testSolve(t, graph, Astar, NO_CONSTRAINT, math.MaxFloat64, solution, costs)
 	testSolve(t, graph, Astar, NO_RETURN, math.MaxFloat64, solution, costs)
 	testSolve(t, graph, Astar, NO_LOOP, math.MaxFloat64, solution, costs)
 	testSolve(t, graph, Astar, CHEAPEST_PATH, math.MaxFloat64, solution, costs)
 
-	testSolve(t, graph, IDAstar, NONE, math.MaxFloat64, solution, costs)
+	testSolve(t, graph, IDAstar, NO_CONSTRAINT, math.MaxFloat64, solution, costs)
 	testSolve(t, graph, IDAstar, NO_RETURN, math.MaxFloat64, solution, costs)
 	testSolve(t, graph, IDAstar, NO_LOOP, math.MaxFloat64, solution, costs)
 	testSolve(t, graph, IDAstar, CHEAPEST_PATH, math.MaxFloat64, solution, costs)
 
-	testSolve(t, graph, DepthFirst, NONE, costs, solution, costs)
+	testSolve(t, graph, DepthFirst, NO_CONSTRAINT, costs, solution, costs)
 	testSolve(t, graph, DepthFirst, NO_RETURN, costs, solution, costs)
 	testSolve(t, graph, DepthFirst, NO_LOOP, costs, solution, costs)
 	testSolve(t, graph, DepthFirst, CHEAPEST_PATH, costs, solution, costs)
 
 	// BF is only optimal if the length of costs corresonds with the length of the path
 	if includeBF {
-		testSolve(t, graph, BreadthFirst, NONE, math.MaxFloat64, solution, costs)
+		testSolve(t, graph, BreadthFirst, NO_CONSTRAINT, math.MaxFloat64, solution, costs)
 		testSolve(t, graph, BreadthFirst, NO_RETURN, math.MaxFloat64, solution, costs)
 		testSolve(t, graph, BreadthFirst, NO_LOOP, math.MaxFloat64, solution, costs)
 		testSolve(t, graph, BreadthFirst, CHEAPEST_PATH, math.MaxFloat64, solution, costs)
@@ -199,7 +199,7 @@ func TestStatisticsWithDifferentConstraints(t *testing.T) {
 	g["b"] = []edge{{"c", 1}, {"d", 2}}
 	g["c"] = []edge{{"a", 1}, {"d", 1}}
 	g["d"] = []edge{{"E", 1}}
-	testStatistics(t, g, Astar, NONE, 27, 16) // currently the test depends on the queue implementation...
+	testStatistics(t, g, Astar, NO_CONSTRAINT, 27, 16) // currently the test depends on the queue implementation...
 	testStatistics(t, g, Astar, NO_RETURN, 8, 7)
 	testStatistics(t, g, Astar, NO_LOOP, 6, 6)
 	testStatistics(t, g, Astar, CHEAPEST_PATH, 4, 5)

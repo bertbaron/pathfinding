@@ -5,19 +5,34 @@ import (
 	"math"
 )
 
-// A constraint that can be used to eliminate nodes from the search tree
+// Constraint that can be used to eliminate nodes from the search tree
 type Constraint int
 
 const (
-	NONE          Constraint = iota
-	NO_RETURN     Constraint = iota
-	NO_LOOP       Constraint = iota
+	// No constraint will be used
+	NO_CONSTRAINT Constraint = iota
+
+	// A state that is equal to its parent or grandparent will be dropped
+	//
+	// Performance is constant time, almost always pays off when applicable
+	NO_RETURN Constraint = iota
+
+	// A state that is equal to any ancestor state will be dropped (more generic than NO_RETURN)
+	//
+	// Performance is linear to the search depth
+	NO_LOOP Constraint = iota
+
+	// When another path was found to an equal state, than one of those will be dropped, keeping the state with
+	// the lowest cost (more generic than NO_LOOP)
+	//
+	// Performance is constant time, but memory usage is linear to the number of states. Therefore this constraint
+	// is most usable in combination with A* or Breadth-First.
 	CHEAPEST_PATH Constraint = iota
 )
 
 func (c Constraint) String() string {
 	switch c {
-	case NONE:
+	case NO_CONSTRAINT:
 		return "None"
 	case NO_RETURN:
 		return "No_return"
@@ -97,7 +112,7 @@ func (c cheapestPathConstraint) onVisit(node *node) bool {
 
 func createConstraint(constraint Constraint) iconstraint {
 	switch constraint {
-	case NONE:
+	case NO_CONSTRAINT:
 		return noConstraint(false)
 	case NO_RETURN:
 		return noLoopConstraint(2)
