@@ -1,8 +1,8 @@
 package solve_test
 
 import (
-	"github.com/bertbaron/solve"
 	"fmt"
+	"github.com/bertbaron/solve"
 )
 
 type state struct {
@@ -12,9 +12,9 @@ type state struct {
 
 func (s state) Expand() []solve.State {
 	var steps []solve.State
-	for i := 0; i < len(s.vector) - 1; i++ {
+	for i := 0; i < len(s.vector)-1; i++ {
 		copy := s.vector
-		copy[i], copy[i + 1] = copy[i + 1], copy[i]
+		copy[i], copy[i+1] = copy[i+1], copy[i]
 		steps = append(steps, state{copy, s.cost + 1})
 	}
 	return steps
@@ -22,7 +22,7 @@ func (s state) Expand() []solve.State {
 
 func (s state) IsGoal() bool {
 	for i := 1; i < len(s.vector); i++ {
-		if s.vector[i - 1] > s.vector[i] {
+		if s.vector[i-1] > s.vector[i] {
 			return false
 		}
 	}
@@ -41,7 +41,7 @@ func (s state) Id() interface{} {
 	return s.vector
 }
 
-// Finds the minumum number of swaps of neighbouring elements required to
+// Finds the minimum number of swaps of neighbouring elements required to
 // sort a vector
 func Example() {
 	s := state{[...]byte{3, 2, 5, 4, 1}, 0}

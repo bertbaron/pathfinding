@@ -1,17 +1,17 @@
 package solve
 
 import (
-	"unicode"
-	"testing"
-	"math"
 	"fmt"
+	"math"
 	"math/rand"
+	"testing"
+	"unicode"
 )
 
 /*
  Problem for testing modelled as a graph. The root node is always "a" or "A", and any node that starts with an uppercase
  character is a goal.
- */
+*/
 
 type edge struct {
 	target string
@@ -23,6 +23,7 @@ type state struct {
 	node  string
 	cost  float64
 }
+
 func (s state) String() string {
 	return fmt.Sprintf("%v", s.node)
 }
@@ -76,7 +77,7 @@ func testSolve(t *testing.T, graph graph, algorithm Algorithm, constraint Constr
 		t.Errorf("%v - Expected %v, but no solution found", name, solution)
 		return
 	}
-	actual := result.Solution[len(result.Solution) - 1]
+	actual := result.Solution[len(result.Solution)-1]
 	state := actual.(state)
 	if state.node != solution {
 		t.Errorf("%v - Expected %v, but found %v", name, solution, state.node)
@@ -163,7 +164,7 @@ func TestWithSingleStateResult(t *testing.T) {
 	result := NewSolver(create(g)).
 		Algorithm(IDAstar).
 		Solve()
-	if (len(result.Solution) != 1) {
+	if len(result.Solution) != 1 {
 		t.Errorf("Expected solution in one step, but found %v", len(result.Solution))
 	}
 }
@@ -181,6 +182,7 @@ func testStatistics(t *testing.T, g graph, algorithm Algorithm, constraint Const
 		t.Errorf("%v - Expected %v nodes expanded, but was %v", name, expExpanded, result.Expanded)
 	}
 }
+
 /*
 (deftest test-with-no-loop-constraint
   (let [graph {:a  [[:a 1] [:b 1]]
@@ -190,7 +192,7 @@ func testStatistics(t *testing.T, g graph, algorithm Algorithm, constraint Const
     (test-statistics graph :A* {:expanded 22 :visited 12})
     (test-statistics graph :A* {:expanded  8 :visited  6} :constraint (no-return-constraint))
     (test-statistics graph :A* {:expanded  6 :visited  5} :constraint (no-loop-constraint))))
- */
+*/
 func TestStatisticsWithDifferentConstraints(t *testing.T) {
 	g := make(graph)
 	g["a"] = []edge{{"a", 1}, {"b", 1}}
@@ -217,7 +219,7 @@ func dummyNode(parent *node, name string, costs float64) *node {
 }
 
 func TestNoLoopConstraint(t *testing.T) {
-	assert := func (name string, value, expected interface {}) {
+	assert := func(name string, value, expected interface{}) {
 		if value != expected {
 			t.Errorf("%v - Expected %v, but was %v", name, expected, value)
 		}
@@ -228,7 +230,6 @@ func TestNoLoopConstraint(t *testing.T) {
 	assert("a1", c.onExpand(a1), false)
 	a2 := dummyNode(a1, "a", 1)
 	assert("same parent", c.onExpand(a2), true)
-
 
 	b1 := dummyNode(a1, "b", 1)
 	assert("b1", c.onExpand(b1), false)
@@ -251,16 +252,16 @@ func TestRingbuffer(t *testing.T) {
 	}
 	b := breadthFirst()
 	lastTaken := -1
-	for i:=0; i<1000; i++ {
+	for i := 0; i < 1000; i++ {
 		b.Add(mknode(i))
-		if i % 3 == 0 {
+		if i%3 == 0 {
 			taken := b.Take()
 			if taken == nil {
-				t.Errorf("Expected node %v at head of the buffer, but the buffer was empty", lastTaken + 1)
+				t.Errorf("Expected node %v at head of the buffer, but the buffer was empty", lastTaken+1)
 				return
 			}
-			if (int(taken.value) != lastTaken + 1) {
-				t.Errorf("Expected element %v from the buffer, but was %v", lastTaken + 1, taken.value)
+			if int(taken.value) != lastTaken+1 {
+				t.Errorf("Expected element %v from the buffer, but was %v", lastTaken+1, taken.value)
 				return
 			}
 			lastTaken = int(taken.value)
@@ -273,9 +274,9 @@ func BenchmarkBreadthFirstStrategy(b *testing.B) {
 	node := &node{nil, nil, 0}
 	for n := 0; n < b.N; n++ {
 		b := breadthFirst()
-		for i:=0; i<3000000; i++ {
+		for i := 0; i < 3000000; i++ {
 			b.Add(node)
-			if i % 3 == 0 {
+			if i%3 == 0 {
 				b.Take()
 			}
 		}
@@ -291,9 +292,9 @@ func BenchmarkAStarStrategy(b *testing.B) {
 	r := rand.New(rand.NewSource(123))
 	for n := 0; n < b.N; n++ {
 		q := aStar()
-		for i:=0; i<1000000; i++ {
+		for i := 0; i < 1000000; i++ {
 			q.Add(mknode(r.Float64()))
-			if i % 3 == 0 {
+			if i%3 == 0 {
 				q.Take()
 			}
 		}
@@ -309,9 +310,9 @@ func BenchmarkAStarStrategyDiscrete(b *testing.B) {
 	r := rand.New(rand.NewSource(123))
 	for n := 0; n < b.N; n++ {
 		q := aStar()
-		for i:=0; i<1000000; i++ {
+		for i := 0; i < 1000000; i++ {
 			q.Add(mknode(float64(r.Intn(100))))
-			if i % 3 == 0 {
+			if i%3 == 0 {
 				q.Take()
 			}
 		}

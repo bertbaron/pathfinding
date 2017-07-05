@@ -1,25 +1,29 @@
 package solve
 
 import (
-	"math"
 	"fmt"
+	"math"
 )
 
 type Constraint int
 
 const (
-	NONE Constraint = iota
-	NO_RETURN Constraint = iota
-	NO_LOOP Constraint = iota
+	NONE          Constraint = iota
+	NO_RETURN     Constraint = iota
+	NO_LOOP       Constraint = iota
 	CHEAPEST_PATH Constraint = iota
 )
 
 func (c Constraint) String() string {
 	switch c {
-	case NONE: return "None"
-	case NO_RETURN: return "No_return"
-	case NO_LOOP: return "No_loop"
-	case CHEAPEST_PATH: return "Cheapest_path"
+	case NONE:
+		return "None"
+	case NO_RETURN:
+		return "No_return"
+	case NO_LOOP:
+		return "No_loop"
+	case CHEAPEST_PATH:
+		return "Cheapest_path"
 	}
 	return "<unknown>"
 }
@@ -55,7 +59,7 @@ func (c noLoopConstraint) onExpand(node *node) bool {
 		if ancestor == nil {
 			return false
 		}
-		if (id == ancestor.state.Id()) {
+		if id == ancestor.state.Id() {
 			return true
 		}
 		ancestor = ancestor.parent
@@ -92,10 +96,14 @@ func (c cheapestPathConstraint) onVisit(node *node) bool {
 
 func createConstraint(constraint Constraint) iconstraint {
 	switch constraint {
-	case NONE: return noConstraint(false)
-	case NO_RETURN: return noLoopConstraint(2)
-	case NO_LOOP: return noLoopConstraint(math.MaxInt32)
-	case CHEAPEST_PATH: return make(cheapestPathConstraint)
+	case NONE:
+		return noConstraint(false)
+	case NO_RETURN:
+		return noLoopConstraint(2)
+	case NO_LOOP:
+		return noLoopConstraint(math.MaxInt32)
+	case CHEAPEST_PATH:
+		return make(cheapestPathConstraint)
 	}
 	panic(fmt.Sprintf("invalid constraint: %v", constraint))
 }

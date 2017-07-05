@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"strings"
-	"math/rand"
 	"github.com/bertbaron/solve"
 	"math"
+	"math/rand"
+	"strings"
 )
 
 const (
@@ -15,18 +15,22 @@ const (
 type direction byte
 
 const (
-	left direction = iota
-	up direction = iota
+	left  direction = iota
+	up    direction = iota
 	right direction = iota
-	down direction = iota
+	down  direction = iota
 )
 
 func (d direction) String() string {
 	switch d {
-	case left: return "←"
-	case up: return "↑"
-	case right: return "→"
-	case down: return "↓"
+	case left:
+		return "←"
+	case up:
+		return "↑"
+	case right:
+		return "→"
+	case down:
+		return "↓"
 	}
 	panic(fmt.Sprintf("Invalid direction: %d", d))
 }
@@ -54,7 +58,7 @@ func initPuzzle(width, height int) puzzleState {
 			state.board[y][x] = value
 		}
 	}
-	state.x, state.y = byte(width - 1), byte(height - 1)
+	state.x, state.y = byte(width-1), byte(height-1)
 	state.board[state.y][state.x] = 0
 	state.context = &puzzleContext{byte(width), byte(height), state.board}
 	return state
@@ -82,10 +86,14 @@ func (p puzzleState) draw() string {
 func move(p puzzleState, d direction) *puzzleState {
 	x, y := p.x, p.y
 	switch d {
-	case up: y--
-	case down: y++
-	case left: x--
-	case right: x++
+	case up:
+		y--
+	case down:
+		y++
+	case left:
+		x--
+	case right:
+		x++
 	}
 	if x < 0 || y < 0 || x >= p.context.width || y >= p.context.height {
 		return nil
@@ -110,7 +118,7 @@ func shuffle(seed int64, p puzzleState, shuffles int) puzzleState {
 
 /*
  Implementation of solve.State
- */
+*/
 
 func (p puzzleState) Cost() float64 {
 	return float64(p.cost)
@@ -135,8 +143,8 @@ func manhattanDistance(w, h, x, y, value int) float64 {
 	if value == 0 {
 		return 0
 	}
-	xx, yy := (value - 1) % w, (value - 1) / w
-	return math.Abs(float64(xx - x)) + math.Abs(float64(yy - y))
+	xx, yy := (value-1)%w, (value-1)/w
+	return math.Abs(float64(xx-x)) + math.Abs(float64(yy-y))
 }
 
 func (p puzzleState) Heuristic() float64 {
@@ -169,11 +177,11 @@ func main() {
 	if n == 0 {
 		fmt.Println("No solution found")
 	} else {
-		moves := make([]string, n - 1)
+		moves := make([]string, n-1)
 		for i, state := range result.Solution[1:] {
 			moves[i] = state.(puzzleState).dir.String()
 		}
-		fmt.Printf("Solution in %v steps: %s\n", result.Solution[n - 1].Cost(), strings.Join(moves, ", "))
+		fmt.Printf("Solution in %v steps: %s\n", result.Solution[n-1].Cost(), strings.Join(moves, ", "))
 		fmt.Printf("visited %d, expanded %d\n", result.Visited, result.Expanded)
 	}
 }

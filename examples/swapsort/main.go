@@ -60,7 +60,7 @@ func swapProblem(initialState []byte) swapState {
 
 // returns a copy of the given vector, where the element at index is swapped with its right neighbour
 func swap(vector [N]byte, index int) [N]byte {
-	vector[index], vector[index + 1] = vector[index + 1], vector[index]
+	vector[index], vector[index+1] = vector[index+1], vector[index]
 	return vector
 }
 
@@ -72,7 +72,7 @@ func (v swapState) Expand() []solve.State {
 	n := v.context.size - 1
 	steps := make([]solve.State, n, n)
 	for i := 0; i < n; i++ {
-		steps[i] = newSwapState(v.context, swap(v.vector, i), v.cost + 1.0, i)
+		steps[i] = newSwapState(v.context, swap(v.vector, i), v.cost+1.0, i)
 	}
 	return steps
 }
@@ -92,7 +92,7 @@ func (v swapState) Heuristic() float64 {
 	for i := 0; i < n; i++ {
 		value := v.vector[i]
 		for d := 0; d < n; d++ {
-			l, r := i - d, i + d
+			l, r := i-d, i+d
 			if l >= 0 && goal[l] == value || r < n && goal[r] == value {
 				offset += d
 				break
@@ -107,7 +107,7 @@ func printSolution(states []solve.State) {
 		swapstate := state.(swapState)
 		for i, e := range asSlice(swapstate) {
 			if i > 0 {
-				if i == swapstate.op + 1 {
+				if i == swapstate.op+1 {
 					fmt.Print("x")
 				} else {
 					fmt.Printf(" ")

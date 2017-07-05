@@ -7,18 +7,22 @@ import (
 type Algorithm int
 
 const (
-	Astar Algorithm = iota
-	DepthFirst Algorithm = iota
+	Astar        Algorithm = iota
+	DepthFirst   Algorithm = iota
 	BreadthFirst Algorithm = iota
-	IDAstar Algorithm = iota
+	IDAstar      Algorithm = iota
 )
 
 func (a Algorithm) String() string {
 	switch a {
-	case Astar: return "A*"
-	case IDAstar: return "IDA*"
-	case BreadthFirst: return "BreadthFirst"
-	case DepthFirst: return "DepthFirst"
+	case Astar:
+		return "A*"
+	case IDAstar:
+		return "IDA*"
+	case BreadthFirst:
+		return "BreadthFirst"
+	case DepthFirst:
+		return "DepthFirst"
 	}
 	return "<unknown>"
 }
@@ -51,8 +55,8 @@ func (pq *priorityQueue) Push(x interface{}) {
 func (pq *priorityQueue) Pop() interface{} {
 	old := *pq
 	n := len(old)
-	item := old[n - 1]
-	*pq = old[0 : n - 1]
+	item := old[n-1]
+	*pq = old[0 : n-1]
 	return item
 }
 
@@ -76,8 +80,8 @@ func (dfq *lifo) Take() *node {
 	}
 	old := *dfq
 	n := len(old)
-	item := old[n - 1]
-	*dfq = old[0 : n - 1]
+	item := old[n-1]
+	*dfq = old[0 : n-1]
 	return item
 }
 

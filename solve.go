@@ -20,7 +20,7 @@ type State interface {
 	Expand() []State
 
 	// Estimated costs to reach a goal. Use 0 for no heuristic. Most algorithms will
-	// find the optimal solution if the heuristic is admissable, meaning it will never
+	// find the optimal solution if the heuristic is admissible, meaning it will never
 	// over-estimate the costs to reach a goal
 	Heuristic() float64
 
@@ -41,7 +41,7 @@ type Result struct {
 	Solution []State
 
 	// Number of nodes visited (dequeued) by the algorithm
-	Visited  int
+	Visited int
 
 	// Number of nodes expanded (enqueued) by the algorithm
 	Expanded int
@@ -76,7 +76,7 @@ func generalSearch(queue strategy, visited int, expanded int, constr iconstraint
 			return result{n, contour, visited, expanded}
 		}
 		for _, child := range n.state.Expand() {
-			childNode := &node{n, child, math.Max(n.value, child.Cost() + child.Heuristic())}
+			childNode := &node{n, child, math.Max(n.value, child.Cost()+child.Heuristic())}
 			if constr.onExpand(childNode) {
 				continue
 			}
@@ -86,11 +86,8 @@ func generalSearch(queue strategy, visited int, expanded int, constr iconstraint
 			}
 			queue.Add(childNode)
 			expanded++
-
 		}
-
 	}
-	return result{nil, contour, visited, expanded}
 }
 
 func idaStar(rootState State, constraint Constraint, limit float64) result {
@@ -125,9 +122,12 @@ func solve(ss solver) Result {
 	}
 	var s strategy
 	switch ss.algorithm {
-	case Astar: s = aStar()
-	case DepthFirst: s = depthFirst()
-	case BreadthFirst: s = breadthFirst()
+	case Astar:
+		s = aStar()
+	case DepthFirst:
+		s = depthFirst()
+	case BreadthFirst:
+		s = breadthFirst()
 	}
 	s.Add(&node{nil, ss.rootState, ss.rootState.Cost() + ss.rootState.Heuristic()})
 
