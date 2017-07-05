@@ -6,9 +6,7 @@ import (
 )
 
 type state struct {
-	// the state of the vector
 	vector [5]byte
-	// the cost to get to this state
 	cost   int
 }
 
