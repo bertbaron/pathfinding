@@ -10,8 +10,6 @@ type state struct {
 	vector [5]byte
 	// the cost to get to this state
 	cost   int
-	// index of the element that was swapped with its right neigbour
-	index  int
 }
 
 func (s state) Id() interface{} {
@@ -19,12 +17,11 @@ func (s state) Id() interface{} {
 }
 
 func (s state) Expand() []solve.State {
-	n := len(s.vector) - 1
-	steps := make([]solve.State, n, n)
-	for i := 0; i < n; i++ {
+	var steps []solve.State
+	for i := 0; i < len(s.vector) - 1; i++ {
 		copy := s.vector
 		copy[i], copy[i + 1] = copy[i + 1], copy[i]
-		steps[i] = state{copy, s.cost + 1, i}
+		steps = append(steps, state{copy, s.cost + 1})
 	}
 	return steps
 }
@@ -49,7 +46,7 @@ func (s state) Heuristic() float64 {
 // Finds the minumum number of swaps of neighbouring elements required to
 // sort a vector
 func Example() {
-	s := state{[...]byte{3, 2, 5, 4, 1}, 0, -1}
+	s := state{[...]byte{3, 2, 5, 4, 1}, 0}
 	result := solve.NewSolver(s).
 		Algorithm(solve.IDAstar).
 		Constraint(solve.NO_LOOP).

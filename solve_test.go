@@ -47,7 +47,7 @@ func (s state) IsGoal() bool {
 }
 
 func (s state) Expand() []State {
-	children := make([]State, 0)
+	var children []State
 	if edges, ok := s.graph[s.node]; ok {
 		for _, edge := range edges {
 			children = append(children, expand(s, edge))
