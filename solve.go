@@ -1,4 +1,4 @@
-// Generic problem solving library with algorithms like A*, IDA*, Depth-first etc.
+// Problem solving library with algorithms like A*, IDA* and Depth-first
 package solve
 
 import (
