@@ -4,13 +4,39 @@ import (
 	"container/heap"
 )
 
+// Algorithm to be used to solve the problem
 type Algorithm int
 
 const (
-	Astar        Algorithm = iota
-	DepthFirst   Algorithm = iota
+	// Astar (A*) solves the problem in the least number of visited nodes. Requires a lot of memory however.
+	//
+	// Wil return the optimal solution if the heuristic is admissible
+	Astar Algorithm = iota
+
+	// DepthFirst uses backtracking to traverse the search tree.
+	// Requires very little memory.
+	//
+	// This is ideal for problems that simply require a solution but don't have some notion of 'best' solution
+	// (like a Sudoku puzzle).
+	//
+	// Will not guarantee to find the optimal solution
+	DepthFirst Algorithm = iota
+
+	// BreadthFirst expands all nodes at a specific depth before going to the next depth. Requires a lot of memory
+	//
+	// It is almost better to use A* or IDA*. If the shortest path is the optimal solution however and no heuristic
+	// is provided, than breadth-first is equivalent to Astar but faster.
+	//
+	// Will find the optimal solution if the shortest path is the optimal solution
 	BreadthFirst Algorithm = iota
-	IDAstar      Algorithm = iota
+
+	// IDAstar (IDA*, Iterative Deepening A*) performs iterative depth-first searches to find the optimal solution
+	// while using very little memory. This works very well when the costs increase in discrete steps along the
+	// path. Because each iteration repeats the work from the previous iteration many more nodes may be visited
+	// to find the solution than will be the case with A*
+	//
+	// Will find the optimal solution if the heuristic is admissible
+	IDAstar Algorithm = iota
 )
 
 func (a Algorithm) String() string {

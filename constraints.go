@@ -9,21 +9,22 @@ import (
 type Constraint int
 
 const (
-	// No constraint will be used
+	// NO_CONSTRAINT will not drop states from the search tree
 	NO_CONSTRAINT Constraint = iota
 
-	// A state that is equal to its parent or grandparent will be dropped
+	// NO_RETURN drops state when it is equal to its parent or grandparent
 	//
 	// Performance is constant time, almost always pays off when applicable
 	NO_RETURN Constraint = iota
 
-	// A state that is equal to any ancestor state will be dropped (more generic than NO_RETURN)
+	// NO_LOOP drops a state when it is equal to any ancestor state. NO_LOOP is more generic than NO_RETURN.
 	//
 	// Performance is linear to the search depth
 	NO_LOOP Constraint = iota
 
-	// When another path was found to an equal state, than one of those will be dropped, keeping the state with
-	// the lowest cost (more generic than NO_LOOP)
+	// CHEAPEST_PATH will drop a state when a cheaper path was found to an equal state. If two equal states have the
+	// same cost, than any of those states will be dropped.
+	// the lowest cost. CHEAPEST_PATH is more more generic than NO_LOOP
 	//
 	// Performance is constant time, but memory usage is linear to the number of states. Therefore this constraint
 	// is most usable in combination with A* or Breadth-First.
