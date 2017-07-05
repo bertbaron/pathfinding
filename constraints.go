@@ -5,6 +5,7 @@ import (
 	"math"
 )
 
+// A constraint that can be used to eliminate nodes from the search tree
 type Constraint int
 
 const (

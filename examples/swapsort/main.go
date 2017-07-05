@@ -6,7 +6,7 @@ import (
 	"sort"
 )
 
-const N = 16
+const max_size = 16
 
 type sortBytes []byte
 
@@ -22,12 +22,12 @@ func (b sortBytes) Swap(i, j int) {
 
 type swapContext struct {
 	size int
-	goal [N]byte
+	goal [max_size]byte
 }
 
 type swapState struct {
 	context *swapContext
-	vector  [N]byte
+	vector  [max_size]byte
 	cost    float64
 	op      int
 }
@@ -40,15 +40,15 @@ func (s swapState) String() string {
 	return fmt.Sprintf("%v, %d", asSlice(s), s.op)
 }
 
-func newSwapState(context *swapContext, vector [N]byte, cost float64, op int) swapState {
+func newSwapState(context *swapContext, vector [max_size]byte, cost float64, op int) swapState {
 	return swapState{context, vector, cost, op}
 }
 
 func swapProblem(initialState []byte) swapState {
-	if len(initialState) > N {
-		panic(fmt.Sprintf("Maximum size of vector is %v, but found %v", N, len(initialState)))
+	if len(initialState) > max_size {
+		panic(fmt.Sprintf("Maximum size of vector is %v, but found %v", max_size, len(initialState)))
 	}
-	var array [N]byte
+	var array [max_size]byte
 	for i, v := range initialState {
 		array[i] = v
 	}
@@ -59,38 +59,38 @@ func swapProblem(initialState []byte) swapState {
 }
 
 // returns a copy of the given vector, where the element at index is swapped with its right neighbour
-func swap(vector [N]byte, index int) [N]byte {
+func swap(vector [max_size]byte, index int) [max_size]byte {
 	vector[index], vector[index+1] = vector[index+1], vector[index]
 	return vector
 }
 
-func (v swapState) Id() interface{} {
-	return v.vector
+func (s swapState) Id() interface{} {
+	return s.vector
 }
 
-func (v swapState) Expand() []solve.State {
-	n := v.context.size - 1
+func (s swapState) Expand() []solve.State {
+	n := s.context.size - 1
 	steps := make([]solve.State, n, n)
 	for i := 0; i < n; i++ {
-		steps[i] = newSwapState(v.context, swap(v.vector, i), v.cost+1.0, i)
+		steps[i] = newSwapState(s.context, swap(s.vector, i), s.cost+1.0, i)
 	}
 	return steps
 }
 
-func (v swapState) IsGoal() bool {
-	return v.vector == v.context.goal
+func (s swapState) IsGoal() bool {
+	return s.vector == s.context.goal
 }
 
-func (v swapState) Cost() float64 {
-	return v.cost
+func (s swapState) Cost() float64 {
+	return s.cost
 }
 
-func (v swapState) Heuristic() float64 {
-	goal := v.context.goal
-	n := v.context.size
+func (s swapState) Heuristic() float64 {
+	goal := s.context.goal
+	n := s.context.size
 	offset := 0
 	for i := 0; i < n; i++ {
-		value := v.vector[i]
+		value := s.vector[i]
 		for d := 0; d < n; d++ {
 			l, r := i-d, i+d
 			if l >= 0 && goal[l] == value || r < n && goal[r] == value {

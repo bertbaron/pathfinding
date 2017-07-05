@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	N = 4
+	max_size = 4
 )
 
 type direction byte
@@ -38,12 +38,12 @@ func (d direction) String() string {
 type puzzleContext struct {
 	width    byte
 	height   byte
-	solution [N][N]byte
+	solution [max_size][max_size]byte
 }
 
 type puzzleState struct {
 	context *puzzleContext
-	board   [N][N]byte
+	board   [max_size][max_size]byte
 	cost    int16
 	x, y    byte
 	dir     direction
