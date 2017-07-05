@@ -77,7 +77,7 @@ func testSolve(t *testing.T, graph graph, algorithm Algorithm, constraint Constr
 		t.Errorf("%v - Expected %v, but no solution found", name, solution)
 		return
 	}
-	actual := result.Solution[len(result.Solution) - 1]
+	actual := result.Solution[len(result.Solution)-1]
 	state := actual.(state)
 	if state.node != solution {
 		t.Errorf("%v - Expected %v, but found %v", name, solution, state.node)
@@ -254,14 +254,14 @@ func TestRingbuffer(t *testing.T) {
 	lastTaken := -1
 	for i := 0; i < 1000; i++ {
 		b.Add(mknode(i))
-		if i % 3 == 0 {
+		if i%3 == 0 {
 			taken := b.Take()
 			if taken == nil {
-				t.Errorf("Expected node %v at head of the buffer, but the buffer was empty", lastTaken + 1)
+				t.Errorf("Expected node %v at head of the buffer, but the buffer was empty", lastTaken+1)
 				return
 			}
-			if int(taken.value) != lastTaken + 1 {
-				t.Errorf("Expected element %v from the buffer, but was %v", lastTaken + 1, taken.value)
+			if int(taken.value) != lastTaken+1 {
+				t.Errorf("Expected element %v from the buffer, but was %v", lastTaken+1, taken.value)
 				return
 			}
 			lastTaken = int(taken.value)
@@ -276,7 +276,7 @@ func BenchmarkBreadthFirstStrategy(b *testing.B) {
 		b := breadthFirst()
 		for i := 0; i < 3000000; i++ {
 			b.Add(node)
-			if i % 3 == 0 {
+			if i%3 == 0 {
 				b.Take()
 			}
 		}
@@ -294,7 +294,7 @@ func BenchmarkAStarStrategy(b *testing.B) {
 		q := aStar()
 		for i := 0; i < 1000000; i++ {
 			q.Add(mknode(r.Float64()))
-			if i % 3 == 0 {
+			if i%3 == 0 {
 				q.Take()
 			}
 		}
@@ -312,7 +312,7 @@ func BenchmarkAStarStrategyDiscrete(b *testing.B) {
 		q := aStar()
 		for i := 0; i < 1000000; i++ {
 			q.Add(mknode(float64(r.Intn(100))))
-			if i % 3 == 0 {
+			if i%3 == 0 {
 				q.Take()
 			}
 		}

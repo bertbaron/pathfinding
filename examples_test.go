@@ -1,8 +1,8 @@
 package solve_test
 
 import (
-	"github.com/bertbaron/solve"
 	"fmt"
+	"github.com/bertbaron/solve"
 )
 
 var puzzle solve.State
