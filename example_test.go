@@ -12,10 +12,6 @@ type state struct {
 	cost   int
 }
 
-func (s state) Id() interface{} {
-	return s.vector
-}
-
 func (s state) Expand() []solve.State {
 	var steps []solve.State
 	for i := 0; i < len(s.vector) - 1; i++ {
@@ -41,6 +37,10 @@ func (s state) Cost() float64 {
 
 func (s state) Heuristic() float64 {
 	return 0
+}
+
+func (s state) Id() interface{} {
+	return s.vector
 }
 
 // Finds the minumum number of swaps of neighbouring elements required to
