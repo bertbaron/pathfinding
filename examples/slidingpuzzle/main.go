@@ -172,35 +172,28 @@ func abs(value int) int {
 func (p puzzleState) Heuristic(context *interface{}) float64 {
 	heuristic := 0
 
-	// manhattan distance + horizontal conflicts in single pass
+	// manhattan distance + horizontal and vertical conflicts in single pass
+	var maxvert [width]int
 	for y, row := range p.board {
-		max := 0
+		maxhor := 0
 		for x, value := range row {
 			v := int(value)
 			if v != 0 {
 				xx, yy := (v - 1) % width, (v - 1) / width
 				heuristic += abs(xx - x) + abs(yy - y)
 				if yy == y {
-					if (v > max) {
-						max = v
+					if (v > maxhor) {
+						maxhor = v
 					} else {
 						heuristic += 2
 					}
 				}
-			}
-		}
-	}
-
-	// vertical conflicts
-	for x := 0; x < width; x++ {
-		max := 0
-		for y := 0; y < height; y++ {
-			value := int(p.board[y][x])
-			if value != 0 && (value - 1) % width == x {
-				if (value > max) {
-					max = value
-				} else {
-					heuristic += 2
+				if xx == x {
+					if (v > maxvert[x]) {
+						maxvert[x] = v
+					} else {
+						heuristic += 2
+					}
 				}
 			}
 		}
