@@ -89,6 +89,7 @@ func (s swapState) Cost(ctx solve.Context) float64 {
 }
 
 func (s swapState) Heuristic(ctx solve.Context) float64 {
+	return 0
 	goal := context(ctx).goal
 	n := context(ctx).size
 	offset := 0
@@ -123,6 +124,20 @@ func printSolution(context swapContext, states []solve.State) {
 	}
 }
 
+type cpMap map[[maxSize]byte]solve.ConstraintNode
+
+func (c cpMap) Get(state solve.State) (solve.ConstraintNode, bool) {
+	value, ok := c[state.(swapState).vector]
+	return value, ok
+}
+
+func (c cpMap) Put(state solve.State, value solve.ConstraintNode) {
+	c[state.(swapState).vector] = value
+}
+func (c *cpMap) Clear() {
+	*c = make(cpMap)
+}
+
 func main() {
 	f, err := os.Create("cpu.prof")
 	if err != nil {
@@ -131,13 +146,15 @@ func main() {
 	pprof.StartCPUProfile(f)
 	defer pprof.StopCPUProfile()
 
-	context, state := swapProblem([]byte{7, 6, 8, 5, 4, 3, 2, 1, 0})
+	context, state := swapProblem([]byte{7, 6, 5, 4, 3, 2, 1, 0})
 	fmt.Printf("Sorting %v in minimal number of swaps of neighbouring elements\n", state)
+	constraintMap := make(cpMap)
 	start := time.Now()
 	solution := solve.NewSolver(state).
 		Context(context).
 		Algorithm(solve.IDAstar).
-		Constraint(solve.CheapestPathConstraint()).
+		//Constraint(solve.CheapestPathConstraint()).
+		Constraint(solve.CheapestPathConstraint2(&constraintMap)).
 		Solve()
 
 	fmt.Printf("visited: %d, expanded %d, time %0.2fs\n", solution.Visited, solution.Expanded, time.Since(start).Seconds())

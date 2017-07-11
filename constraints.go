@@ -130,6 +130,7 @@ func (c *cheapestPathConstraint) reset() {
 func NoConstraint() Constraint {
 	return noConstraint(false)
 }
+
 func CheapestPathConstraint() Constraint {
 	return &cheapestPathConstraint{make(map[interface{}]constraintNode)}
 }
@@ -147,3 +148,44 @@ func CheapestPathConstraint() Constraint {
 //	}
 //	panic(fmt.Sprintf("invalid constraint: %v", constraint))
 //}
+
+type ConstraintNode struct {
+	value   float64
+	visited bool
+}
+
+type CPMap interface {
+	Get(state State) (ConstraintNode, bool)
+	Put(state State, value ConstraintNode)
+	Clear()
+}
+
+type cheapestPathConstraint2 struct {
+	m CPMap
+}
+
+func (c cheapestPathConstraint2) onExpand(node *node) bool {
+	current, ok := c.m.Get(node.state)
+	if !ok || node.value < current.value {
+		c.m.Put(node.state, ConstraintNode{node.value, false})
+		return false
+	}
+	return true
+}
+
+func (c cheapestPathConstraint2) onVisit(node *node) bool {
+	current, ok := c.m.Get(node.state)
+	if !ok || node.value < current.value || node.value == current.value && !current.visited {
+		c.m.Put(node.state, ConstraintNode{node.value, true})
+		return false
+	}
+	return true
+}
+
+func (c cheapestPathConstraint2) reset() {
+	c.m.Clear()
+}
+
+func CheapestPathConstraint2(m CPMap) Constraint {
+	return cheapestPathConstraint2{m}
+}
