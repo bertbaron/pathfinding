@@ -36,6 +36,122 @@ func (d direction) String() string {
 	panic(fmt.Sprintf("Invalid direction: %d", d))
 }
 
+type subState struct {
+	board [height][width]byte
+	cost  int16
+}
+
+func (p subState) Cost(context *interface{}) float64 {
+	return float64(p.cost)
+}
+
+func mkchild(children []solve.State, p subState, x, y, nx, ny int) []solve.State {
+	if p.board[ny][nx] != 0 {
+		return children
+	}
+	child := p
+	child.board[ny][nx], child.board[y][x] = child.board[y][x], 0
+	child.cost++
+	return append(children, child)
+}
+
+func (p subState) Expand(context *interface{}) []solve.State {
+	children := make([]solve.State, 0)
+	for y, row := range p.board {
+		for x, value := range row {
+			if value != 0 {
+				if y > 0 {
+					children = mkchild(children, p, x, y, x, y - 1)
+				}
+				if y < width - 1 {
+					children = mkchild(children, p, x, y, x, y + 1)
+				}
+				if x > 0 {
+					children = mkchild(children, p, x, y, x - 1, y)
+				}
+				if x < height - 1 {
+					children = mkchild(children, p, x, y, x + 1, y)
+				}
+			}
+		}
+	}
+	return children
+}
+
+func (p subState) IsGoal(context *interface{}) bool {
+	return isGoal(p.board)
+}
+
+func abs(value int) int {
+	if (value < 0) {
+		return -value
+	}
+	return value
+}
+
+func (p subState) Heuristic(context *interface{}) float64 {
+	return float64(manhattanWithConflicts(p.board))
+}
+
+func (p subState) Id() interface{} {
+	return p.board
+}
+
+func toSubstate(puzzle puzzleState, pattern [width * height]int) subState {
+	var substate subState
+	substate.board = puzzle.board
+	for y, row := range substate.board {
+		for x, value := range row {
+			if pattern[value] == 1 {
+				substate.board[y][x] = 0
+			}
+		}
+	}
+	return substate
+}
+
+var db = make(map[[height][width]byte]int)
+
+func subHeuristic(puzzle puzzleState, pattern [width * height]int) int {
+	substate := toSubstate(puzzle, pattern)
+	if cached, ok := db[substate.board]; ok {
+		//fmt.Print(".")
+		return cached
+	}
+	//fmt.Printf("Substate: %v\n", substate)
+	result := solve.NewSolver(substate).
+	//Algorithm(solve.IDAstar).
+		Algorithm(solve.Astar).
+		Constraint(solve.CHEAPEST_PATH).
+		Solve()
+	n := len(result.Solution)
+	if n == 0 {
+		panic("Geen oplossing gevonden voor subprobleem!")
+	}
+	h := int(result.Solution[n - 1].Cost(nil))
+	//fmt.Printf("Heuristic for %v: %v\n", substate, h)
+	for _, state := range result.Solution {
+		db[state.(subState).board] = h
+	}
+	//fmt.Print("x")
+	return h
+}
+
+func subproblemHeuristic(puzzle puzzleState) int {
+	h := 0
+	h += subHeuristic(puzzle, [width * height]int{
+		1, 1, 1, 1,
+		1, 0, 0, 0,
+		1, 0, 0, 0,
+		1, 0, 0, 0})
+	h += subHeuristic(puzzle, [width * height]int{
+		0, 0, 0, 0,
+		0, 1, 1, 1,
+		0, 1, 1, 1,
+		0, 1, 1, 1})
+	return h
+}
+
 type puzzleState struct {
 	board [height][width]byte
 	cost  int16
@@ -147,34 +263,29 @@ func (p puzzleState) Expand(context *interface{}) []solve.State {
 	return children
 }
 
-func (p puzzleState) IsGoal(context *interface{}) bool {
-	for y, row := range p.board {
+func isGoal(board [height][width]byte) bool {
+	for y, row := range board {
 		for x, value := range row {
-			if x == width - 1 && y == height - 1 {
-				return true
-			}
-			expected := byte(y * width + x + 1)
-			if value != expected {
-				return false
+			if value != 0 {
+				if value != byte(y * width + x + 1) {
+					return false
+				}
 			}
 		}
 	}
-	panic("unreachable")
+	return true
 }
 
-func abs(value int) int {
-	if (value < 0) {
-		return -value
-	}
-	return value
+func (p puzzleState) IsGoal(context *interface{}) bool {
+	return isGoal(p.board)
 }
 
-func (p puzzleState) Heuristic(context *interface{}) float64 {
+func manhattanWithConflicts(board [height][width]byte) int {
 	heuristic := 0
 
 	// manhattan distance + horizontal and vertical conflicts in single pass
 	var maxvert [width]int
-	for y, row := range p.board {
+	for y, row := range board {
 		maxhor := 0
 		for x, value := range row {
 			v := int(value)
@@ -198,8 +309,14 @@ func (p puzzleState) Heuristic(context *interface{}) float64 {
 			}
 		}
 	}
+	return heuristic
+}
 
-	return float64(heuristic)
+func (p puzzleState) Heuristic(context *interface{}) float64 {
+	if p.cost < 40 {
+		return float64(subproblemHeuristic(p))
+	}
+	return float64(manhattanWithConflicts(p.board))
 }
 
 func (p puzzleState) Id() interface{} {
@@ -207,14 +324,18 @@ func (p puzzleState) Id() interface{} {
 }
 
 func generateAndSolve(seed int64) solve.Result {
-	puzzle := shuffle(seed, initPuzzle(4, 4), 10000)
-	fmt.Printf("Solving the puzzle generated with seed %v\n", seed)
-	//puzzle := fromBoard([][]int{{15, 14, 8, 12}, {10, 11, 9, 13}, {2, 6, 5, 1}, {3, 7, 4, 0}}) // 80 moves
+	//puzzle := shuffle(seed, initPuzzle(4, 4), 10000)
+	//fmt.Printf("Solving the puzzle generated with seed %v\n", seed)
+	puzzle := fromBoard([][]int{{15, 14, 8, 12}, {10, 11, 9, 13}, {2, 6, 5, 1}, {3, 7, 4, 0}}) // 80 moves
 	fmt.Print(puzzle.draw())
+	fmt.Println()
+	fmt.Printf("Heuristic: %v\n", manhattanWithConflicts(puzzle.board))
+	fmt.Printf("Subproblem heuristic: %v\n", subproblemHeuristic(puzzle))
 	fmt.Println()
 	start := time.Now()
 	result := solve.NewSolver(puzzle).
 		Algorithm(solve.IDAstar).
+	Limit(1).
 		Solve()
 	fmt.Printf("Time: %.2f\n", time.Since(start).Seconds())
 	return result
