@@ -10,15 +10,15 @@ import (
 
 const (
 	height = 4
-	width = 4
+	width  = 4
 )
 
 type direction int8
 
 const (
-	left direction = iota
-	up direction = iota
-	down direction = iota
+	left  direction = iota
+	up    direction = iota
+	down  direction = iota
 	right direction = iota
 )
 
@@ -37,7 +37,7 @@ func (d direction) String() string {
 }
 
 func abs(value int) int {
-	if (value < 0) {
+	if value < 0 {
 		return -value
 	}
 	return value
@@ -53,17 +53,17 @@ func manhattanWithConflicts(board [height][width]byte) int {
 		for x, value := range row {
 			v := int(value)
 			if v != 0 {
-				xx, yy := (v - 1) % width, (v - 1) / width
-				heuristic += abs(xx - x) + abs(yy - y)
+				xx, yy := (v-1)%width, (v-1)/width
+				heuristic += abs(xx-x) + abs(yy-y)
 				if yy == y {
-					if (v > maxhor) {
+					if v > maxhor {
 						maxhor = v
 					} else {
 						heuristic += 2
 					}
 				}
 				if xx == x {
-					if (v > maxver[x]) {
+					if v > maxver[x] {
 						maxver[x] = v
 					} else {
 						heuristic += 2
@@ -78,7 +78,7 @@ func manhattanWithConflicts(board [height][width]byte) int {
 func isGoal(board [height][width]byte) bool {
 	for y, row := range board {
 		for x, value := range row {
-			if value != 0 && value != byte(y * width + x + 1) {
+			if value != 0 && value != byte(y*width+x+1) {
 				return false
 			}
 		}
@@ -102,7 +102,7 @@ func initPuzzle(width, height int) puzzleState {
 			state.board[y][x] = value
 		}
 	}
-	state.x, state.y = byte(width - 1), byte(height - 1)
+	state.x, state.y = byte(width-1), byte(height-1)
 	state.board[state.y][state.x] = 0
 	return state
 }
@@ -184,7 +184,7 @@ func (p puzzleState) Cost(ctx solve.Context) float64 {
 func (p puzzleState) Expand(ctx solve.Context) []solve.State {
 	children := make([]solve.State, 0)
 	for d := 0; d < 4; d++ {
-		if int(p.dir) != 3 - d {
+		if int(p.dir) != 3-d {
 			if child := move(p, direction(d)); child != nil {
 				child.cost += 1
 				children = append(children, *child)
@@ -202,10 +202,6 @@ func (p puzzleState) Heuristic(ctx solve.Context) float64 {
 	return float64(manhattanWithConflicts(p.board))
 }
 
-func (p puzzleState) Id() interface{} {
-	return p.board
-}
-
 func generateAndSolve(seed int64) solve.Result {
 	puzzle := shuffle(seed, initPuzzle(4, 4), 10000)
 	fmt.Printf("Solving the puzzle generated with seed %v\n", seed)
@@ -216,7 +212,7 @@ func generateAndSolve(seed int64) solve.Result {
 	result := solve.NewSolver(puzzle).
 		Algorithm(solve.IDAstar).
 		Solve()
-	fmt.Printf("Time: %.2f\n", time.Since(start).Seconds())
+	fmt.Printf("Time: %.2f sec\n", time.Since(start).Seconds())
 	return result
 }
 
@@ -244,11 +240,11 @@ func main() {
 	if n == 0 {
 		fmt.Println("No solution found")
 	} else {
-		moves := make([]string, n - 1)
+		moves := make([]string, n-1)
 		for i, state := range result.Solution[1:] {
 			moves[i] = state.(puzzleState).dir.String()
 		}
-		fmt.Printf("Solution in %v steps: %s\n", len(result.Solution) - 1, strings.Join(moves, " "))
+		fmt.Printf("Solution in %v steps: %s\n", len(result.Solution)-1, strings.Join(moves, " "))
 		fmt.Printf("visited %d, expanded %d\n", result.Visited, result.Expanded)
 	}
 }

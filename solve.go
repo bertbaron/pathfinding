@@ -10,6 +10,7 @@ import (
 type Context struct {
 	Custom interface{}
 }
+
 // The State representing a state in the search tree
 //
 // An implementation of this interface represents the problem. It tells the algorithm how
@@ -28,15 +29,6 @@ type State interface {
 	// find the optimal solution if the heuristic is admissible, meaning it will never
 	// over-estimate the costs to reach a goal
 	Heuristic(ctx Context) float64
-
-	// Returns an id that is used in constraints to reduce the search tree by
-	// eliminating identical states. Can be nil if no constraint is used.
-	//
-	// Symmetrical states may return the same Id to eliminate even more branches of the
-	// search tree
-	//
-	// The result must be comparable (like go map keys)
-	Id() interface{}
 }
 
 // Result of the search
@@ -46,7 +38,7 @@ type Result struct {
 	Solution []State
 
 	// Number of nodes visited (dequeued) by the algorithm
-	Visited  int
+	Visited int
 
 	// Number of nodes expanded (enqueued) by the algorithm
 	Expanded int
@@ -67,7 +59,7 @@ type result struct {
 
 func generalSearch(queue strategy, visited int, expanded int, constr iconstraint, limit float64, context Context) result {
 	contour := math.Inf(1)
-
+	constr.reset()
 	for {
 		n := queue.Take()
 		if n == nil {
@@ -81,7 +73,7 @@ func generalSearch(queue strategy, visited int, expanded int, constr iconstraint
 			return result{n, contour, visited, expanded}
 		}
 		for _, child := range n.state.Expand(context) {
-			childNode := &node{n, child, math.Max(n.value, child.Cost(context) + child.Heuristic(context))}
+			childNode := &node{n, child, math.Max(n.value, child.Cost(context)+child.Heuristic(context))}
 			if constr.onExpand(childNode) {
 				continue
 			}
@@ -100,7 +92,6 @@ func idaStar(rootState State, constraint iconstraint, limit float64, context Con
 	expanded := 0
 	contour := 0.0
 	for true {
-		constraint.reset()
 		s := depthFirst()
 		s.Add(&node{nil, rootState, rootState.Cost(context) + rootState.Heuristic(context)})
 		lastResult := generalSearch(s, visited, expanded, constraint, contour, context)

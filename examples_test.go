@@ -10,7 +10,7 @@ var puzzle solve.State
 func ExampleSolver() {
 	result := solve.NewSolver(puzzle).
 		Algorithm(solve.IDAstar).
-		Constraint(solve.NO_LOOP).
+		Constraint(solve.NoLoopConstraint(10, sameState)).
 		Solve()
 	fmt.Println(result.Solution)
 }

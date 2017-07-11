@@ -3,11 +3,11 @@ package main
 import (
 	"fmt"
 	"github.com/bertbaron/solve"
+	"log"
+	"os"
+	"runtime/pprof"
 	"sort"
 	"time"
-	"os"
-	"log"
-	"runtime/pprof"
 )
 
 const maxSize = 16
@@ -30,9 +30,9 @@ type swapContext struct {
 }
 
 type swapState struct {
-	vector  [maxSize]byte
-	cost    float64
-	op      int
+	vector [maxSize]byte
+	cost   float64
+	op     int
 }
 
 func (s swapState) String() string {
@@ -65,10 +65,6 @@ func swap(vector [maxSize]byte, index int) [maxSize]byte {
 
 func context(ctx solve.Context) swapContext {
 	return (ctx.Custom).(swapContext)
-}
-
-func (s swapState) Id() interface{} {
-	return s.vector
 }
 
 func (s swapState) Expand(ctx solve.Context) []solve.State {
@@ -109,7 +105,7 @@ func (s swapState) Heuristic(ctx solve.Context) float64 {
 func printSolution(context swapContext, states []solve.State) {
 	for _, state := range states {
 		swapstate := state.(swapState)
-		for i :=0; i<context.size; i++ {
+		for i := 0; i < context.size; i++ {
 			e := state.(swapState).vector
 			if i > 0 {
 				if i == swapstate.op+1 {
@@ -124,14 +120,14 @@ func printSolution(context swapContext, states []solve.State) {
 	}
 }
 
-type cpMap map[[maxSize]byte]solve.ConstraintNode
+type cpMap map[[maxSize]byte]solve.CPNode
 
-func (c cpMap) Get(state solve.State) (solve.ConstraintNode, bool) {
+func (c cpMap) Get(state solve.State) (solve.CPNode, bool) {
 	value, ok := c[state.(swapState).vector]
 	return value, ok
 }
 
-func (c cpMap) Put(state solve.State, value solve.ConstraintNode) {
+func (c cpMap) Put(state solve.State, value solve.CPNode) {
 	c[state.(swapState).vector] = value
 }
 func (c *cpMap) Clear() {
@@ -154,7 +150,7 @@ func main() {
 		Context(context).
 		Algorithm(solve.IDAstar).
 		//Constraint(solve.CheapestPathConstraint()).
-		Constraint(solve.CheapestPathConstraint2(&constraintMap)).
+		Constraint(solve.CheapestPathConstraint(&constraintMap)).
 		Solve()
 
 	fmt.Printf("visited: %d, expanded %d, time %0.2fs\n", solution.Visited, solution.Expanded, time.Since(start).Seconds())

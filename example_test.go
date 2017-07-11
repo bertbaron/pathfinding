@@ -37,8 +37,8 @@ func (s state) Heuristic(ctx solve.Context) float64 {
 	return 0
 }
 
-func (s state) Id() interface{} {
-	return s.vector
+func sameState(a, b solve.State) bool {
+	return a.(state).vector == b.(state).vector
 }
 
 // Finds the minimum number of swaps of neighbouring elements required to
@@ -47,7 +47,7 @@ func Example() {
 	s := state{[...]byte{3, 2, 5, 4, 1}, 0}
 	result := solve.NewSolver(s).
 		Algorithm(solve.IDAstar).
-		Constraint(solve.NO_LOOP).
+		Constraint(solve.NoLoopConstraint(10, sameState)).
 		Solve()
 	for _, st := range result.Solution {
 		fmt.Printf("%v\n", st.(state).vector)

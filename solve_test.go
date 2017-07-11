@@ -61,9 +61,31 @@ func (s state) Heuristic(ctx Context) float64 {
 	return 0
 }
 
-func (s state) Id() interface{} {
-	return s.node
+// for no-loop-constraint
+func same(a, b State) bool {
+	return a.(state).node == b.(state).node
 }
+
+// for cheapest-path-constraint
+type cpMap map[string]CPNode
+
+func (c cpMap) Get(s State) (CPNode, bool) {
+	value, ok := c[s.(state).node]
+	return value, ok
+}
+
+func (c cpMap) Put(s State, value CPNode) {
+	c[s.(state).node] = value
+}
+func (c *cpMap) Clear() {
+	*c = make(cpMap)
+}
+
+var testNoConstraint = NoConstraint()
+var testNoReturnConstraint = NoLoopConstraint(2, same)
+var testNoLoopConstraint = NoLoopConstraint(99999, same)
+var testCPMap = make(cpMap)
+var testCheapestPathConstraint = CheapestPathConstraint(&testCPMap)
 
 func testSolve(t *testing.T, graph graph, algorithm Algorithm, constraint Constraint, limit float64, solution string, costs float64) {
 	result := NewSolver(create(graph)).
@@ -91,27 +113,27 @@ func testSolve(t *testing.T, graph graph, algorithm Algorithm, constraint Constr
 
 // Solves the problem with all algorithms and constraints that should return in the optimal solution
 func testSolveAllAlgorithms(t *testing.T, graph graph, includeBF bool, solution string, costs float64) {
-	testSolve(t, graph, Astar, NO_CONSTRAINT, math.MaxFloat64, solution, costs)
-	testSolve(t, graph, Astar, NO_RETURN, math.MaxFloat64, solution, costs)
-	testSolve(t, graph, Astar, NO_LOOP, math.MaxFloat64, solution, costs)
-	testSolve(t, graph, Astar, CHEAPEST_PATH, math.MaxFloat64, solution, costs)
+	testSolve(t, graph, Astar, testNoConstraint, math.MaxFloat64, solution, costs)
+	testSolve(t, graph, Astar, testNoReturnConstraint, math.MaxFloat64, solution, costs)
+	testSolve(t, graph, Astar, testNoLoopConstraint, math.MaxFloat64, solution, costs)
+	testSolve(t, graph, Astar, testCheapestPathConstraint, math.MaxFloat64, solution, costs)
 
-	testSolve(t, graph, IDAstar, NO_CONSTRAINT, math.MaxFloat64, solution, costs)
-	testSolve(t, graph, IDAstar, NO_RETURN, math.MaxFloat64, solution, costs)
-	testSolve(t, graph, IDAstar, NO_LOOP, math.MaxFloat64, solution, costs)
-	testSolve(t, graph, IDAstar, CHEAPEST_PATH, math.MaxFloat64, solution, costs)
+	testSolve(t, graph, IDAstar, testNoConstraint, math.MaxFloat64, solution, costs)
+	testSolve(t, graph, IDAstar, testNoReturnConstraint, math.MaxFloat64, solution, costs)
+	testSolve(t, graph, IDAstar, testNoLoopConstraint, math.MaxFloat64, solution, costs)
+	testSolve(t, graph, IDAstar, testCheapestPathConstraint, math.MaxFloat64, solution, costs)
 
-	testSolve(t, graph, DepthFirst, NO_CONSTRAINT, costs, solution, costs)
-	testSolve(t, graph, DepthFirst, NO_RETURN, costs, solution, costs)
-	testSolve(t, graph, DepthFirst, NO_LOOP, costs, solution, costs)
-	testSolve(t, graph, DepthFirst, CHEAPEST_PATH, costs, solution, costs)
+	testSolve(t, graph, DepthFirst, testNoConstraint, costs, solution, costs)
+	testSolve(t, graph, DepthFirst, testNoReturnConstraint, costs, solution, costs)
+	testSolve(t, graph, DepthFirst, testNoLoopConstraint, costs, solution, costs)
+	testSolve(t, graph, DepthFirst, testCheapestPathConstraint, costs, solution, costs)
 
 	// BF is only optimal if the length of costs corresonds with the length of the path
 	if includeBF {
-		testSolve(t, graph, BreadthFirst, NO_CONSTRAINT, math.MaxFloat64, solution, costs)
-		testSolve(t, graph, BreadthFirst, NO_RETURN, math.MaxFloat64, solution, costs)
-		testSolve(t, graph, BreadthFirst, NO_LOOP, math.MaxFloat64, solution, costs)
-		testSolve(t, graph, BreadthFirst, CHEAPEST_PATH, math.MaxFloat64, solution, costs)
+		testSolve(t, graph, BreadthFirst, testNoConstraint, math.MaxFloat64, solution, costs)
+		testSolve(t, graph, BreadthFirst, testNoReturnConstraint, math.MaxFloat64, solution, costs)
+		testSolve(t, graph, BreadthFirst, testNoLoopConstraint, math.MaxFloat64, solution, costs)
+		testSolve(t, graph, BreadthFirst, testCheapestPathConstraint, math.MaxFloat64, solution, costs)
 	}
 }
 
@@ -199,10 +221,10 @@ func TestStatisticsWithDifferentConstraints(t *testing.T) {
 	g["b"] = []edge{{"c", 1}, {"d", 2}}
 	g["c"] = []edge{{"a", 1}, {"d", 1}}
 	g["d"] = []edge{{"E", 1}}
-	testStatistics(t, g, Astar, NO_CONSTRAINT, 27, 16) // currently the test depends on the queue implementation...
-	testStatistics(t, g, Astar, NO_RETURN, 8, 7)
-	testStatistics(t, g, Astar, NO_LOOP, 6, 6)
-	testStatistics(t, g, Astar, CHEAPEST_PATH, 4, 5)
+	testStatistics(t, g, Astar, testNoConstraint, 27, 16) // currently the test depends on the queue implementation...
+	testStatistics(t, g, Astar, testNoReturnConstraint, 8, 7)
+	testStatistics(t, g, Astar, testNoLoopConstraint, 6, 6)
+	testStatistics(t, g, Astar, testCheapestPathConstraint, 4, 5)
 }
 
 type dummyState struct {
@@ -210,12 +232,13 @@ type dummyState struct {
 	name string
 }
 
-func (s dummyState) Id() interface{} {
-	return s.name
-}
-
 func dummyNode(parent *node, name string, costs float64) *node {
 	return &node{parent, dummyState{nil, name}, costs}
+}
+
+// for no-loop-constraint
+func equalDummyStates(a, b State) bool {
+	return a.(dummyState).name == b.(dummyState).name
 }
 
 func TestNoLoopConstraint(t *testing.T) {
@@ -225,7 +248,7 @@ func TestNoLoopConstraint(t *testing.T) {
 		}
 	}
 
-	c := noLoopConstraint(2)
+	c := NoLoopConstraint(2, equalDummyStates).(iconstraint)
 	a1 := dummyNode(nil, "a", 1)
 	assert("a1", c.onExpand(a1), false)
 	a2 := dummyNode(a1, "a", 1)
