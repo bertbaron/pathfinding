@@ -27,25 +27,20 @@ type swapContext struct {
 }
 
 type swapState struct {
-	context *swapContext
 	vector  [maxSize]byte
 	cost    float64
 	op      int
 }
 
-func asSlice(s swapState) []byte {
-	return s.vector[0:s.context.size]
-}
-
 func (s swapState) String() string {
-	return fmt.Sprintf("%v, %d", asSlice(s), s.op)
+	return fmt.Sprintf("%v, %d", s.vector, s.op)
 }
 
-func newSwapState(context *swapContext, vector [maxSize]byte, cost float64, op int) swapState {
-	return swapState{context, vector, cost, op}
+func newSwapState(vector [maxSize]byte, cost float64, op int) swapState {
+	return swapState{vector, cost, op}
 }
 
-func swapProblem(initialState []byte) swapState {
+func swapProblem(initialState []byte) (swapContext, swapState) {
 	if len(initialState) > maxSize {
 		panic(fmt.Sprintf("Maximum size of vector is %v, but found %v", maxSize, len(initialState)))
 	}
@@ -55,8 +50,8 @@ func swapProblem(initialState []byte) swapState {
 	}
 	sorted := array
 	sort.Sort(sortBytes(sorted[0:len(initialState)]))
-	context := &swapContext{len(initialState), sorted}
-	return newSwapState(context, array, 0.0, -1)
+	context := swapContext{len(initialState), sorted}
+	return context, newSwapState(array, 0.0, -1)
 }
 
 // returns a copy of the given vector, where the element at index is swapped with its right neighbour
@@ -65,21 +60,25 @@ func swap(vector [maxSize]byte, index int) [maxSize]byte {
 	return vector
 }
 
+func context(ctx solve.Context) swapContext {
+	return (ctx.Custom).(swapContext)
+}
+
 func (s swapState) Id() interface{} {
 	return s.vector
 }
 
 func (s swapState) Expand(ctx solve.Context) []solve.State {
-	n := s.context.size - 1
+	n := context(ctx).size - 1
 	steps := make([]solve.State, n, n)
 	for i := 0; i < n; i++ {
-		steps[i] = newSwapState(s.context, swap(s.vector, i), s.cost+1.0, i)
+		steps[i] = newSwapState(swap(s.vector, i), s.cost+1.0, i)
 	}
 	return steps
 }
 
 func (s swapState) IsGoal(ctx solve.Context) bool {
-	return s.vector == s.context.goal
+	return s.vector == context(ctx).goal
 }
 
 func (s swapState) Cost(ctx solve.Context) float64 {
@@ -87,8 +86,8 @@ func (s swapState) Cost(ctx solve.Context) float64 {
 }
 
 func (s swapState) Heuristic(ctx solve.Context) float64 {
-	goal := s.context.goal
-	n := s.context.size
+	goal := context(ctx).goal
+	n := context(ctx).size
 	offset := 0
 	for i := 0; i < n; i++ {
 		value := s.vector[i]
@@ -103,10 +102,11 @@ func (s swapState) Heuristic(ctx solve.Context) float64 {
 	return float64(offset / 2)
 }
 
-func printSolution(states []solve.State) {
+func printSolution(context swapContext, states []solve.State) {
 	for _, state := range states {
 		swapstate := state.(swapState)
-		for i, e := range asSlice(swapstate) {
+		for i :=0; i<context.size; i++ {
+			e := state.(swapState).vector
 			if i > 0 {
 				if i == swapstate.op+1 {
 					fmt.Print("x")
@@ -121,10 +121,11 @@ func printSolution(states []solve.State) {
 }
 
 func main() {
-	state := swapProblem([]byte{7, 6, 8, 5, 4, 3, 2, 1, 0})
+	context, state := swapProblem([]byte{7, 6, 8, 5, 4, 3, 2, 1, 0})
 	fmt.Printf("Sorting %v in minimal number of swaps of neighbouring elements\n", state)
 	start := time.Now()
 	solution := solve.NewSolver(state).
+		Context(context).
 		Algorithm(solve.IDAstar).
 		Constraint(solve.CHEAPEST_PATH).
 		Solve()

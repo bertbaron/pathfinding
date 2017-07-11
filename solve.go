@@ -8,7 +8,7 @@ import (
 // Context can be used to interact with the solver and to maintain a custom context
 // during the search.
 type Context struct {
-	custom *interface{}
+	Custom interface{}
 }
 // The State representing a state in the search tree
 //
@@ -156,7 +156,7 @@ type Solver interface {
 
 	// Custom context which is passed to the methods of the state. Can contain for example precalculated data that
 	// is used to speed up calculations. Be careful with state in the context though.
-	Context(context *interface{}) Solver
+	Context(context interface{}) Solver
 
 	// Solves the problem returning the result
 	Solve() Result
@@ -166,7 +166,7 @@ type solver struct {
 	algorithm  Algorithm
 	constraint Constraint
 	limit      float64
-	context    *interface{}
+	context    interface{}
 }
 
 func (s *solver) Algorithm(algorithm Algorithm) Solver {
@@ -184,7 +184,7 @@ func (s *solver) Limit(limit float64) Solver {
 	return s
 }
 
-func (s *solver) Context(context *interface{}) Solver {
+func (s *solver) Context(context interface{}) Solver {
 	s.context = context
 	return s
 }
