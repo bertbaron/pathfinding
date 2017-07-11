@@ -85,7 +85,6 @@ func (s swapState) Cost(ctx solve.Context) float64 {
 }
 
 func (s swapState) Heuristic(ctx solve.Context) float64 {
-	return 0
 	goal := context(ctx).goal
 	n := context(ctx).size
 	offset := 0
@@ -130,6 +129,7 @@ func (c cpMap) Get(state solve.State) (solve.CPNode, bool) {
 func (c cpMap) Put(state solve.State, value solve.CPNode) {
 	c[state.(swapState).vector] = value
 }
+
 func (c *cpMap) Clear() {
 	*c = make(cpMap)
 }

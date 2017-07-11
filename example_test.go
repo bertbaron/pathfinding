@@ -11,13 +11,13 @@ type state struct {
 }
 
 func (s state) Expand(ctx solve.Context) []solve.State {
-	var steps []solve.State
+	var children []solve.State
 	for i := 0; i < len(s.vector)-1; i++ {
 		copy := s.vector
 		copy[i], copy[i+1] = copy[i+1], copy[i]
-		steps = append(steps, state{copy, s.cost + 1})
+		children = append(children, state{copy, s.cost + 1})
 	}
-	return steps
+	return children
 }
 
 func (s state) IsGoal(ctx solve.Context) bool {
