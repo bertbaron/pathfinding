@@ -4,4 +4,4 @@ go:
  - 1.6.x
  - 1.7.x
  - 1.8.x
- - master
+# - master (can be enabled when priority queue test is not implementation-dependent anymore)
