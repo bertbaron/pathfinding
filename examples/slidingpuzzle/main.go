@@ -36,6 +36,56 @@ func (d direction) String() string {
 	panic(fmt.Sprintf("Invalid direction: %d", d))
 }
 
+func abs(value int) int {
+	if (value < 0) {
+		return -value
+	}
+	return value
+}
+
+func manhattanWithConflicts(board [height][width]byte) int {
+	heuristic := 0
+
+	// manhattan distance + horizontal and vertical conflicts in single pass
+	var maxvert [width]int
+	for y, row := range board {
+		maxhor := 0
+		for x, value := range row {
+			v := int(value)
+			if v != 0 {
+				xx, yy := (v - 1) % width, (v - 1) / width
+				heuristic += abs(xx - x) + abs(yy - y)
+				if yy == y {
+					if (v > maxhor) {
+						maxhor = v
+					} else {
+						heuristic += 2
+					}
+				}
+				if xx == x {
+					if (v > maxvert[x]) {
+						maxvert[x] = v
+					} else {
+						heuristic += 2
+					}
+				}
+			}
+		}
+	}
+	return heuristic
+}
+
+func isGoal(board [height][width]byte) bool {
+	for y, row := range board {
+		for x, value := range row {
+			if value != 0 && value != byte(y * width + x + 1) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 type subState struct {
 	board [height][width]byte
 	cost  int16
@@ -82,13 +132,6 @@ func (p subState) IsGoal(context *interface{}) bool {
 	return isGoal(p.board)
 }
 
-func abs(value int) int {
-	if (value < 0) {
-		return -value
-	}
-	return value
-}
-
 func (p subState) Heuristic(context *interface{}) float64 {
 	return float64(manhattanWithConflicts(p.board))
 }
@@ -102,7 +145,7 @@ func toSubstate(puzzle puzzleState, pattern [width * height]int) subState {
 	substate.board = puzzle.board
 	for y, row := range substate.board {
 		for x, value := range row {
-			if pattern[value] == 1 {
+			if value > 0 && pattern[value - 1] == 1 {
 				substate.board[y][x] = 0
 			}
 		}
@@ -112,44 +155,53 @@ func toSubstate(puzzle puzzleState, pattern [width * height]int) subState {
 
 var db = make(map[[height][width]byte]int)
 
-func subHeuristic(puzzle puzzleState, pattern [width * height]int) int {
+func subHeuristic(puzzle puzzleState, cacheOnly bool, pattern [width * height]int) int {
 	substate := toSubstate(puzzle, pattern)
 	if cached, ok := db[substate.board]; ok {
 		//fmt.Print(".")
 		return cached
 	}
+	if cacheOnly {
+		return -1
+	}
+	//start := time.Now()
 	//fmt.Printf("Substate: %v\n", substate)
 	result := solve.NewSolver(substate).
 	//Algorithm(solve.IDAstar).
 		Algorithm(solve.Astar).
 		Constraint(solve.CHEAPEST_PATH).
 		Solve()
+	//t := time.Since(start)
 	n := len(result.Solution)
 	if n == 0 {
 		panic("Geen oplossing gevonden voor subprobleem!")
 	}
 	h := int(result.Solution[n - 1].Cost(nil))
-	//fmt.Printf("Heuristic for %v: %v\n", substate, h)
-	for _, state := range result.Solution {
-		db[state.(subState).board] = h
+	//fmt.Printf("Heuristic for %v: %v (%.2f sec)\n", substate, h, t.Seconds())
+	for i, state := range result.Solution {
+		db[state.(subState).board] = h - i
 	}
-	//fmt.Print("x")
 	return h
 }
 
-func subproblemHeuristic(puzzle puzzleState) int {
-	h := 0
-	h += subHeuristic(puzzle, [width * height]int{
+func subproblemHeuristic(puzzle puzzleState, cacheOnly bool) int {
+	h1 := subHeuristic(puzzle, cacheOnly, [width * height]int{
 		1, 1, 1, 1,
-		1, 0, 0, 0,
-		1, 0, 0, 0,
-		1, 0, 0, 0})
-	h += subHeuristic(puzzle, [width * height]int{
 		0, 0, 0, 0,
-		0, 1, 1, 1,
-		0, 1, 1, 1,
-		0, 1, 1, 1})
-	return h
+		0, 0, 0, 0,
+		1, 1, 1, 1})
+	if cacheOnly && h1 < 0 {
+		return -1
+	}
+	h2 := subHeuristic(puzzle, cacheOnly, [width * height]int{
+		0, 0, 0, 0,
+		1, 1, 1, 1,
+		1, 1, 1, 1,
+		0, 0, 0, 0})
+	if cacheOnly && h2 < 0 {
+		return -1
+	}
+	return h1 + h2
 }
 
 type puzzleState struct {
@@ -263,59 +315,11 @@ func (p puzzleState) Expand(context *interface{}) []solve.State {
 	return children
 }
 
-func isGoal(board [height][width]byte) bool {
-	for y, row := range board {
-		for x, value := range row {
-			if value != 0 {
-				if value != byte(y * width + x + 1) {
-					return false
-				}
-			}
-		}
-	}
-	return true
-}
-
 func (p puzzleState) IsGoal(context *interface{}) bool {
 	return isGoal(p.board)
 }
 
-func manhattanWithConflicts(board [height][width]byte) int {
-	heuristic := 0
-
-	// manhattan distance + horizontal and vertical conflicts in single pass
-	var maxvert [width]int
-	for y, row := range board {
-		maxhor := 0
-		for x, value := range row {
-			v := int(value)
-			if v != 0 {
-				xx, yy := (v - 1) % width, (v - 1) / width
-				heuristic += abs(xx - x) + abs(yy - y)
-				if yy == y {
-					if (v > maxhor) {
-						maxhor = v
-					} else {
-						heuristic += 2
-					}
-				}
-				if xx == x {
-					if (v > maxvert[x]) {
-						maxvert[x] = v
-					} else {
-						heuristic += 2
-					}
-				}
-			}
-		}
-	}
-	return heuristic
-}
-
 func (p puzzleState) Heuristic(context *interface{}) float64 {
-	if p.cost < 40 {
-		return float64(subproblemHeuristic(p))
-	}
 	return float64(manhattanWithConflicts(p.board))
 }
 
@@ -324,32 +328,17 @@ func (p puzzleState) Id() interface{} {
 }
 
 func generateAndSolve(seed int64) solve.Result {
-	//puzzle := shuffle(seed, initPuzzle(4, 4), 10000)
-	//fmt.Printf("Solving the puzzle generated with seed %v\n", seed)
-	puzzle := fromBoard([][]int{{15, 14, 8, 12}, {10, 11, 9, 13}, {2, 6, 5, 1}, {3, 7, 4, 0}}) // 80 moves
+	puzzle := shuffle(seed, initPuzzle(4, 4), 10000)
+	fmt.Printf("Solving the puzzle generated with seed %v\n", seed)
+	//puzzle := fromBoard([][]int{{15, 14, 8, 12}, {10, 11, 9, 13}, {2, 6, 5, 1}, {3, 7, 4, 0}}) // 80 moves
 	fmt.Print(puzzle.draw())
-	fmt.Println()
-	fmt.Printf("Heuristic: %v\n", manhattanWithConflicts(puzzle.board))
-	fmt.Printf("Subproblem heuristic: %v\n", subproblemHeuristic(puzzle))
 	fmt.Println()
 	start := time.Now()
 	result := solve.NewSolver(puzzle).
 		Algorithm(solve.IDAstar).
-	Limit(1).
 		Solve()
 	fmt.Printf("Time: %.2f\n", time.Since(start).Seconds())
 	return result
-	//n := len(result.Solution)
-	//if n == 0 {
-	//	fmt.Println("No solution found")
-	//} else {
-	//	moves := make([]string, n - 1)
-	//	for i, state := range result.Solution[1:] {
-	//		moves[i] = state.(puzzleState).dir.String()
-	//	}
-	//	fmt.Printf("Solution in %v steps: %s\n", result.Solution[n - 1].Cost(), strings.Join(moves, ", "))
-	//	fmt.Printf("visited %d, expanded %d\n", result.Visited, result.Expanded)
-	//}
 }
 
 func main() {
@@ -370,7 +359,7 @@ func main() {
 	//}
 	//pprof.StartCPUProfile(f)
 	//defer pprof.StopCPUProfile()
-	//
+
 	result := generateAndSolve(8)
 	n := len(result.Solution)
 	if n == 0 {
