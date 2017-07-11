@@ -5,6 +5,9 @@ import (
 	"github.com/bertbaron/solve"
 	"sort"
 	"time"
+	"os"
+	"log"
+	"runtime/pprof"
 )
 
 const maxSize = 16
@@ -121,13 +124,20 @@ func printSolution(context swapContext, states []solve.State) {
 }
 
 func main() {
+	f, err := os.Create("cpu.prof")
+	if err != nil {
+		log.Fatal(err)
+	}
+	pprof.StartCPUProfile(f)
+	defer pprof.StopCPUProfile()
+
 	context, state := swapProblem([]byte{7, 6, 8, 5, 4, 3, 2, 1, 0})
 	fmt.Printf("Sorting %v in minimal number of swaps of neighbouring elements\n", state)
 	start := time.Now()
 	solution := solve.NewSolver(state).
 		Context(context).
 		Algorithm(solve.IDAstar).
-		Constraint(solve.CHEAPEST_PATH).
+		Constraint(solve.CheapestPathConstraint()).
 		Solve()
 
 	fmt.Printf("visited: %d, expanded %d, time %0.2fs\n", solution.Visited, solution.Expanded, time.Since(start).Seconds())

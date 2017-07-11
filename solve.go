@@ -46,7 +46,7 @@ type Result struct {
 	Solution []State
 
 	// Number of nodes visited (dequeued) by the algorithm
-	Visited int
+	Visited  int
 
 	// Number of nodes expanded (enqueued) by the algorithm
 	Expanded int
@@ -81,7 +81,7 @@ func generalSearch(queue strategy, visited int, expanded int, constr iconstraint
 			return result{n, contour, visited, expanded}
 		}
 		for _, child := range n.state.Expand(context) {
-			childNode := &node{n, child, math.Max(n.value, child.Cost(context)+child.Heuristic(context))}
+			childNode := &node{n, child, math.Max(n.value, child.Cost(context) + child.Heuristic(context))}
 			if constr.onExpand(childNode) {
 				continue
 			}
@@ -95,14 +95,15 @@ func generalSearch(queue strategy, visited int, expanded int, constr iconstraint
 	}
 }
 
-func idaStar(rootState State, constraint Constraint, limit float64, context Context) result {
+func idaStar(rootState State, constraint iconstraint, limit float64, context Context) result {
 	visited := 0
 	expanded := 0
 	contour := 0.0
 	for true {
+		constraint.reset()
 		s := depthFirst()
 		s.Add(&node{nil, rootState, rootState.Cost(context) + rootState.Heuristic(context)})
-		lastResult := generalSearch(s, visited, expanded, createConstraint(constraint), contour, context)
+		lastResult := generalSearch(s, visited, expanded, constraint, contour, context)
 		if lastResult.node != nil || lastResult.contour > limit || math.IsInf(lastResult.contour, 1) || math.IsNaN(lastResult.contour) {
 			return lastResult
 		}
@@ -123,8 +124,9 @@ func toSlice(node *node) []State {
 
 func solve(ss solver) Result {
 	context := Context{ss.context}
+	constraint := ss.constraint.(iconstraint)
 	if ss.algorithm == IDAstar {
-		result := idaStar(ss.rootState, ss.constraint, ss.limit, context)
+		result := idaStar(ss.rootState, constraint, ss.limit, context)
 		return Result{toSlice(result.node), result.visited, result.expanded}
 	}
 	var s strategy
@@ -138,7 +140,7 @@ func solve(ss solver) Result {
 	}
 	s.Add(&node{nil, ss.rootState, ss.rootState.Cost(context) + ss.rootState.Heuristic(context)})
 
-	result := generalSearch(s, 0, 0, createConstraint(ss.constraint), ss.limit, context)
+	result := generalSearch(s, 0, 0, constraint, ss.limit, context)
 	return Result{toSlice(result.node), result.visited, result.expanded}
 }
 
@@ -195,5 +197,5 @@ func (s *solver) Solve() Result {
 
 // NewSolver creates a new solver
 func NewSolver(rootState State) Solver {
-	return &solver{rootState, Astar, NO_CONSTRAINT, math.Inf(1), nil}
+	return &solver{rootState, Astar, NoConstraint(), math.Inf(1), nil}
 }
