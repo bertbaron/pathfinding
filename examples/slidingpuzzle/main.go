@@ -47,7 +47,7 @@ func manhattanWithConflicts(board [height][width]byte) int {
 	heuristic := 0
 
 	// manhattan distance + horizontal and vertical conflicts in single pass
-	var maxvert [width]int
+	var maxver [width]int
 	for y, row := range board {
 		maxhor := 0
 		for x, value := range row {
@@ -63,8 +63,8 @@ func manhattanWithConflicts(board [height][width]byte) int {
 					}
 				}
 				if xx == x {
-					if (v > maxvert[x]) {
-						maxvert[x] = v
+					if (v > maxver[x]) {
+						maxver[x] = v
 					} else {
 						heuristic += 2
 					}
@@ -84,124 +84,6 @@ func isGoal(board [height][width]byte) bool {
 		}
 	}
 	return true
-}
-
-type subState struct {
-	board [height][width]byte
-	cost  int16
-}
-
-func (p subState) Cost(context *interface{}) float64 {
-	return float64(p.cost)
-}
-
-func mkchild(children []solve.State, p subState, x, y, nx, ny int) []solve.State {
-	if p.board[ny][nx] != 0 {
-		return children
-	}
-	child := p
-	child.board[ny][nx], child.board[y][x] = child.board[y][x], 0
-	child.cost++
-	return append(children, child)
-}
-
-func (p subState) Expand(context *interface{}) []solve.State {
-	children := make([]solve.State, 0)
-	for y, row := range p.board {
-		for x, value := range row {
-			if value != 0 {
-				if y > 0 {
-					children = mkchild(children, p, x, y, x, y - 1)
-				}
-				if y < width - 1 {
-					children = mkchild(children, p, x, y, x, y + 1)
-				}
-				if x > 0 {
-					children = mkchild(children, p, x, y, x - 1, y)
-				}
-				if x < height - 1 {
-					children = mkchild(children, p, x, y, x + 1, y)
-				}
-			}
-		}
-	}
-	return children
-}
-
-func (p subState) IsGoal(context *interface{}) bool {
-	return isGoal(p.board)
-}
-
-func (p subState) Heuristic(context *interface{}) float64 {
-	return float64(manhattanWithConflicts(p.board))
-}
-
-func (p subState) Id() interface{} {
-	return p.board
-}
-
-func toSubstate(puzzle puzzleState, pattern [width * height]int) subState {
-	var substate subState
-	substate.board = puzzle.board
-	for y, row := range substate.board {
-		for x, value := range row {
-			if value > 0 && pattern[value - 1] == 1 {
-				substate.board[y][x] = 0
-			}
-		}
-	}
-	return substate
-}
-
-var db = make(map[[height][width]byte]int)
-
-func subHeuristic(puzzle puzzleState, cacheOnly bool, pattern [width * height]int) int {
-	substate := toSubstate(puzzle, pattern)
-	if cached, ok := db[substate.board]; ok {
-		//fmt.Print(".")
-		return cached
-	}
-	if cacheOnly {
-		return -1
-	}
-	//start := time.Now()
-	//fmt.Printf("Substate: %v\n", substate)
-	result := solve.NewSolver(substate).
-	//Algorithm(solve.IDAstar).
-		Algorithm(solve.Astar).
-		Constraint(solve.CHEAPEST_PATH).
-		Solve()
-	//t := time.Since(start)
-	n := len(result.Solution)
-	if n == 0 {
-		panic("Geen oplossing gevonden voor subprobleem!")
-	}
-	h := int(result.Solution[n - 1].Cost(nil))
-	//fmt.Printf("Heuristic for %v: %v (%.2f sec)\n", substate, h, t.Seconds())
-	for i, state := range result.Solution {
-		db[state.(subState).board] = h - i
-	}
-	return h
-}
-
-func subproblemHeuristic(puzzle puzzleState, cacheOnly bool) int {
-	h1 := subHeuristic(puzzle, cacheOnly, [width * height]int{
-		1, 1, 1, 1,
-		0, 0, 0, 0,
-		0, 0, 0, 0,
-		1, 1, 1, 1})
-	if cacheOnly && h1 < 0 {
-		return -1
-	}
-	h2 := subHeuristic(puzzle, cacheOnly, [width * height]int{
-		0, 0, 0, 0,
-		1, 1, 1, 1,
-		1, 1, 1, 1,
-		0, 0, 0, 0})
-	if cacheOnly && h2 < 0 {
-		return -1
-	}
-	return h1 + h2
 }
 
 type puzzleState struct {
@@ -236,9 +118,6 @@ func fromBoard(board [][]int) puzzleState {
 			}
 		}
 	}
-	width := len(board[0])
-	height := len(board)
-	initPuzzle(width, height) // initializes the context as side-effect
 	return state
 }
 
@@ -369,7 +248,7 @@ func main() {
 		for i, state := range result.Solution[1:] {
 			moves[i] = state.(puzzleState).dir.String()
 		}
-		fmt.Printf("Solution in %v steps: %s\n", len(result.Solution) - 1, strings.Join(moves, ", "))
+		fmt.Printf("Solution in %v steps: %s\n", len(result.Solution) - 1, strings.Join(moves, " "))
 		fmt.Printf("visited %d, expanded %d\n", result.Visited, result.Expanded)
 	}
 }
