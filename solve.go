@@ -3,27 +3,31 @@ package solve
 
 import (
 	"math"
-	"fmt"
 )
 
+// Context can be used to interact with the solver and to maintain a custom context
+// during the search.
+type Context struct {
+	custom *interface{}
+}
 // The State representing a state in the search tree
 //
 // An implementation of this interface represents the problem. It tells the algorithm how
 // to get from one state to another, how much it costs to reach the state etc.
 type State interface {
 	// The costs to reach this state
-	Cost(context *interface{}) float64
+	Cost(ctx Context) float64
 
 	// Returns true if this is a goal state
-	IsGoal(context *interface{}) bool
+	IsGoal(ctx Context) bool
 
 	// Expands this state in zero or more child states
-	Expand(context *interface{}) []State
+	Expand(ctx Context) []State
 
 	// Estimated costs to reach a goal. Use 0 for no heuristic. Most algorithms will
 	// find the optimal solution if the heuristic is admissible, meaning it will never
 	// over-estimate the costs to reach a goal
-	Heuristic(context *interface{}) float64
+	Heuristic(ctx Context) float64
 
 	// Returns an id that is used in constraints to reduce the search tree by
 	// eliminating identical states. Can be nil if no constraint is used.
@@ -61,7 +65,7 @@ type result struct {
 	expanded int
 }
 
-func generalSearch(queue strategy, visited int, expanded int, constr iconstraint, limit float64, context *interface{}) result {
+func generalSearch(queue strategy, visited int, expanded int, constr iconstraint, limit float64, context Context) result {
 	contour := math.Inf(1)
 
 	for {
@@ -91,7 +95,7 @@ func generalSearch(queue strategy, visited int, expanded int, constr iconstraint
 	}
 }
 
-func idaStar(rootState State, constraint Constraint, limit float64, context *interface{}) result {
+func idaStar(rootState State, constraint Constraint, limit float64, context Context) result {
 	visited := 0
 	expanded := 0
 	contour := 0.0
@@ -105,7 +109,7 @@ func idaStar(rootState State, constraint Constraint, limit float64, context *int
 		visited = lastResult.visited
 		expanded = lastResult.expanded
 		contour = lastResult.contour
-		fmt.Printf("contour: %v, visited: %v\n", contour, visited)
+		//fmt.Printf("contour: %v, visited: %v\n", contour, visited)
 	}
 	panic("Shouldn't be reached")
 }
@@ -118,8 +122,9 @@ func toSlice(node *node) []State {
 }
 
 func solve(ss solver) Result {
+	context := Context{ss.context}
 	if ss.algorithm == IDAstar {
-		result := idaStar(ss.rootState, ss.constraint, ss.limit, ss.context)
+		result := idaStar(ss.rootState, ss.constraint, ss.limit, context)
 		return Result{toSlice(result.node), result.visited, result.expanded}
 	}
 	var s strategy
@@ -131,9 +136,9 @@ func solve(ss solver) Result {
 	case BreadthFirst:
 		s = breadthFirst()
 	}
-	s.Add(&node{nil, ss.rootState, ss.rootState.Cost(ss.context) + ss.rootState.Heuristic(ss.context)})
+	s.Add(&node{nil, ss.rootState, ss.rootState.Cost(context) + ss.rootState.Heuristic(context)})
 
-	result := generalSearch(s, 0, 0, createConstraint(ss.constraint), ss.limit, ss.context)
+	result := generalSearch(s, 0, 0, createConstraint(ss.constraint), ss.limit, context)
 	return Result{toSlice(result.node), result.visited, result.expanded}
 }
 

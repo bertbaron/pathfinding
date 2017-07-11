@@ -39,15 +39,15 @@ func expand(s state, edge edge) state {
 	return state{s.graph, edge.target, s.cost + edge.cost}
 }
 
-func (s state) Cost() float64 {
+func (s state) Cost(ctx Context) float64 {
 	return s.cost
 }
 
-func (s state) IsGoal() bool {
+func (s state) IsGoal(ctx Context) bool {
 	return unicode.IsUpper([]rune(s.node)[0])
 }
 
-func (s state) Expand() []State {
+func (s state) Expand(ctx Context) []State {
 	var children []State
 	if edges, ok := s.graph[s.node]; ok {
 		for _, edge := range edges {
@@ -57,7 +57,7 @@ func (s state) Expand() []State {
 	return children
 }
 
-func (s state) Heuristic() float64 {
+func (s state) Heuristic(ctx Context) float64 {
 	return 0
 }
 

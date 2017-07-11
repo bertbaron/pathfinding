@@ -177,11 +177,11 @@ func shuffle(seed int64, p puzzleState, shuffles int) puzzleState {
  Implementation of solve.State
 */
 
-func (p puzzleState) Cost(context *interface{}) float64 {
+func (p puzzleState) Cost(ctx solve.Context) float64 {
 	return float64(p.cost)
 }
 
-func (p puzzleState) Expand(context *interface{}) []solve.State {
+func (p puzzleState) Expand(ctx solve.Context) []solve.State {
 	children := make([]solve.State, 0)
 	for d := 0; d < 4; d++ {
 		if int(p.dir) != 3 - d {
@@ -194,11 +194,11 @@ func (p puzzleState) Expand(context *interface{}) []solve.State {
 	return children
 }
 
-func (p puzzleState) IsGoal(context *interface{}) bool {
+func (p puzzleState) IsGoal(ctx solve.Context) bool {
 	return isGoal(p.board)
 }
 
-func (p puzzleState) Heuristic(context *interface{}) float64 {
+func (p puzzleState) Heuristic(ctx solve.Context) float64 {
 	return float64(manhattanWithConflicts(p.board))
 }
 

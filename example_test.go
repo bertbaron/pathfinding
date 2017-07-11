@@ -10,7 +10,7 @@ type state struct {
 	cost   int
 }
 
-func (s state) Expand() []solve.State {
+func (s state) Expand(ctx solve.Context) []solve.State {
 	var steps []solve.State
 	for i := 0; i < len(s.vector)-1; i++ {
 		copy := s.vector
@@ -20,7 +20,7 @@ func (s state) Expand() []solve.State {
 	return steps
 }
 
-func (s state) IsGoal() bool {
+func (s state) IsGoal(ctx solve.Context) bool {
 	for i := 1; i < len(s.vector); i++ {
 		if s.vector[i-1] > s.vector[i] {
 			return false
@@ -29,11 +29,11 @@ func (s state) IsGoal() bool {
 	return true
 }
 
-func (s state) Cost() float64 {
+func (s state) Cost(ctx solve.Context) float64 {
 	return float64(s.cost)
 }
 
-func (s state) Heuristic() float64 {
+func (s state) Heuristic(ctx solve.Context) float64 {
 	return 0
 }
 

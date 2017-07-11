@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/bertbaron/solve"
 	"sort"
+	"time"
 )
 
 const maxSize = 16
@@ -68,7 +69,7 @@ func (s swapState) Id() interface{} {
 	return s.vector
 }
 
-func (s swapState) Expand() []solve.State {
+func (s swapState) Expand(ctx solve.Context) []solve.State {
 	n := s.context.size - 1
 	steps := make([]solve.State, n, n)
 	for i := 0; i < n; i++ {
@@ -77,15 +78,15 @@ func (s swapState) Expand() []solve.State {
 	return steps
 }
 
-func (s swapState) IsGoal() bool {
+func (s swapState) IsGoal(ctx solve.Context) bool {
 	return s.vector == s.context.goal
 }
 
-func (s swapState) Cost() float64 {
+func (s swapState) Cost(ctx solve.Context) float64 {
 	return s.cost
 }
 
-func (s swapState) Heuristic() float64 {
+func (s swapState) Heuristic(ctx solve.Context) float64 {
 	goal := s.context.goal
 	n := s.context.size
 	offset := 0
@@ -120,18 +121,19 @@ func printSolution(states []solve.State) {
 }
 
 func main() {
-	state := swapProblem([]byte{7, 6, 5, 4, 3, 2, 1, 0})
+	state := swapProblem([]byte{7, 6, 8, 5, 4, 3, 2, 1, 0})
 	fmt.Printf("Sorting %v in minimal number of swaps of neighbouring elements\n", state)
+	start := time.Now()
 	solution := solve.NewSolver(state).
 		Algorithm(solve.IDAstar).
 		Constraint(solve.CHEAPEST_PATH).
 		Solve()
 
-	fmt.Printf("visited: %d, expanded %d\n", solution.Visited, solution.Expanded)
+	fmt.Printf("visited: %d, expanded %d, time %0.2fs\n", solution.Visited, solution.Expanded, time.Since(start).Seconds())
 	if len(solution.Solution) == 0 {
 		fmt.Printf("No solution found\n")
 	} else {
 		fmt.Printf("Solution found in %v steps\n", len(solution.Solution))
-		printSolution(solution.Solution)
+		//printSolution(solution.Solution)
 	}
 }
