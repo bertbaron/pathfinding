@@ -93,7 +93,7 @@ type puzzleState struct {
 	dir   direction
 }
 
-func initPuzzle(width, height int) puzzleState {
+func initPuzzle() puzzleState {
 	var state puzzleState
 	var value byte
 	for y := 0; y < height; y++ {
@@ -202,8 +202,35 @@ func (p puzzleState) Heuristic(ctx solve.Context) float64 {
 	return float64(manhattanWithConflicts(p.board))
 }
 
+// For cheapest path constraint
+type cpMap map[[height][width]byte]solve.CPNode
+
+func (c cpMap) Get(state solve.State) (value solve.CPNode, ok bool) {
+	value, ok = c[state.(puzzleState).board]
+	return
+}
+
+func (c cpMap) Put(state solve.State, value solve.CPNode) {
+	c[state.(puzzleState).board] = value
+}
+
+func (c *cpMap) Clear() {
+	*c = make(cpMap)
+}
+
+func cheapestPathConstraint() solve.Constraint {
+	var m cpMap
+	return solve.CheapestPathConstraint(&m)
+}
+
+func noLoopConstraint(depth int) solve.Constraint {
+	return solve.NoLoopConstraint(depth, func (a, b solve.State) bool {
+		return a.(puzzleState).board == b.(puzzleState).board
+	})
+}
+
 func generateAndSolve(seed int64) solve.Result {
-	puzzle := shuffle(seed, initPuzzle(4, 4), 10000)
+	puzzle := shuffle(seed, initPuzzle(), 10000)
 	fmt.Printf("Solving the puzzle generated with seed %v\n", seed)
 	//puzzle := fromBoard([][]int{{15, 14, 8, 12}, {10, 11, 9, 13}, {2, 6, 5, 1}, {3, 7, 4, 0}}) // 80 moves
 	fmt.Print(puzzle.draw())
@@ -211,6 +238,8 @@ func generateAndSolve(seed int64) solve.Result {
 	start := time.Now()
 	result := solve.NewSolver(puzzle).
 		Algorithm(solve.IDAstar).
+		//Constraint(noLoopConstraint(12)).
+		//Constraint(cheapestPathConstraint()).
 		Solve()
 	fmt.Printf("Time: %.2f sec\n", time.Since(start).Seconds())
 	return result
