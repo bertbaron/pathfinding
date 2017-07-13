@@ -43,20 +43,15 @@ func (s sudoku) Expand(solve.Context) []solve.State {
 func (s sudoku) withValue(value int) *sudoku {
 	row := s.position / 9
 	col := s.position % 9
-	current := s.values[row][col]
-	copy := s
-	copy.position++
-	if current == value {
-		return &copy // value already filled
-	}
-	if current != 0 {
-		return nil // other value at position
-	}
-	for i := 0; i < 9; i++ {
-		if s.values[row][i] == value || s.values[i][col] == value || s.values[row/3*3+i/3][col/3*3+i%3] == value {
-			return nil // row, column or block conflict
+	if s.values[row][col] != value {
+		for i := 0; i < 9; i++ {
+			if s.values[row][i] == value || s.values[i][col] == value || s.values[row/3*3+i/3][col/3*3+i%3] == value {
+				return nil // row, column or block conflict
+			}
 		}
 	}
+	copy := s
+	copy.position++
 	copy.values[row][col] = value
 	return &copy
 }
