@@ -17,7 +17,7 @@ func newSudoku(values [9][9]int) sudoku {
 }
 
 func (s sudoku) Cost(solve.Context) float64 {
-	return float64(s.position)
+	return 0
 }
 
 func (s sudoku) Heuristic(solve.Context) float64 {
@@ -30,7 +30,7 @@ func (s sudoku) IsGoal(solve.Context) bool {
 
 func (s sudoku) Expand(solve.Context) []solve.State {
 	var children []solve.State
-	for v := 1; v < 10; v++ {
+	for v := 1; v <= 9; v++ {
 		if child := s.withValue(v); child != nil {
 			children = append(children, *child)
 		}
