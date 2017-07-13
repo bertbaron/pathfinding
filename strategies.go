@@ -8,7 +8,8 @@ import (
 type Algorithm int
 
 const (
-	// Astar (A*) solves the problem in the least number of visited nodes. Requires a lot of memory however.
+	// Astar (A*) solves the problem in the least number of visited nodes.
+	// Requires a lot of memory.
 	//
 	// Wil return the optimal solution if the heuristic is admissible
 	Astar Algorithm = iota
@@ -22,18 +23,19 @@ const (
 	// Will not guarantee to find the optimal solution
 	DepthFirst Algorithm = iota
 
-	// BreadthFirst expands all nodes at a specific depth before going to the next depth. Requires a lot of memory
+	// BreadthFirst expands all nodes at a specific depth before going to the next depth.
+	// Requires a lot of memory.
 	//
-	// It is almost better to use A* or IDA*. If the shortest path is the optimal solution however and no heuristic
-	// is provided, than breadth-first is equivalent to Astar but faster.
+	// It is almost always better to use A* or IDA*. If the cost is proportional to the depth however and no
+	// heuristic is provided then breadth-first is equivalent to A* but faster.
 	//
 	// Will find the optimal solution if the shortest path is the optimal solution
 	BreadthFirst Algorithm = iota
 
 	// IDAstar (IDA*, Iterative Deepening A*) performs iterative depth-first searches to find the optimal solution
 	// while using very little memory. This works very well when the costs increase in discrete steps along the
-	// path. Because each iteration repeats the work from the previous iteration many more nodes may be visited
-	// to find the solution than will be the case with A*
+	// path. Because each iteration repeats the work from the previous iteration however, many more nodes may be
+	// visited to find the solution than will be the case with A*
 	//
 	// Will find the optimal solution if the heuristic is admissible
 	IDAstar Algorithm = iota
@@ -116,7 +118,7 @@ func (dfq *lifo) Add(node *node) {
 }
 
 // Inspired by github.com/phf/go-queue/queue, but we implement our own
-// because we only need part of the functionality and can make a sligtly
+// because we only need part of the functionality and can make a slightly
 // more efficient implementation without the need for an external dependency
 type ringbuffer struct {
 	buffer []*node

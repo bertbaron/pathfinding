@@ -3,7 +3,7 @@ package solve
 import "strconv"
 
 // Constraint is a marker interface for constraints. Because the constraint methods refer to internal data structures
-// we can not expose those methods (or can we somehow?)
+// we can not expose those methods
 type Constraint interface{}
 
 // A possibly mutable constraint, returns true if a node is constraint, so it should not be expanded further.
@@ -64,7 +64,7 @@ func (c noLoopConstraint) String() string {
 // A depth of 1 will compare only with the parent state. A depth of 2 will compare with
 // the parent state and its parent state, etc.
 //
-// The states are compared using the provided function. Note that symmetric states my
+// The states are compared using the provided function. Note that symmetric states may
 // be considered equal by this function to eliminate symmetric branches from the search tree.
 //
 // Performance is linear in the depth or the actual search depth, whichever is smaller
@@ -139,7 +139,7 @@ func (c cheapestPathConstraint) String() string {
 }
 
 // CheapestPathConstraint will drop a state when a cheaper path was found to an equal state. If two equal states have the
-// same cost, than any of those states will be dropped the lowest cost.
+// same cost, than any of those states will be dropped.
 //
 // A custom map implementation needs to be provided to efficiently store the state. Note that symmetric states may map
 // to the same key to eliminate symmetric branches from the search tree.
