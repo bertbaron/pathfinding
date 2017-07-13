@@ -1,8 +1,10 @@
+// Very simple sudoku solver to show the use of depth-first
+// to solve a problem with plain simple backtracking
 package main
 
 import (
-	"github.com/bertbaron/solve"
 	"fmt"
+	"github.com/bertbaron/solve"
 )
 
 type sudoku struct {
@@ -10,8 +12,8 @@ type sudoku struct {
 	position int
 }
 
-func (s sudoku) String() string {
-	return fmt.Sprintf("%v (%v)", s.values, s.position)
+func newSudoku(values [9][9]int) sudoku {
+	return sudoku{values, 0}
 }
 
 func (s sudoku) Cost(solve.Context) float64 {
@@ -22,13 +24,8 @@ func (s sudoku) Heuristic(solve.Context) float64 {
 	return 0
 }
 
-var max int
 func (s sudoku) IsGoal(solve.Context) bool {
-	if s.position > max {
-		max = s.position
-		fmt.Println(s.values)
-	}
-	return s.position == 9 * 9
+	return s.position == 9*9
 }
 
 func (s sudoku) Expand(solve.Context) []solve.State {
@@ -37,48 +34,67 @@ func (s sudoku) Expand(solve.Context) []solve.State {
 		if child := s.withValue(v); child != nil {
 			children = append(children, *child)
 		}
-
 	}
 	return children
 }
 
+// Returns a new sudoku with the value set at the current position,
+// or nil if that would be invalid
 func (s sudoku) withValue(value int) *sudoku {
 	row := s.position / 9
 	col := s.position % 9
 	current := s.values[row][col]
+	copy := s
+	copy.position++
 	if current == value {
-		copy := s
-		copy.position++
-		return &copy
+		return &copy // value already filled
 	}
 	if current != 0 {
-		return nil
+		return nil // other value at position
 	}
-	blockx := col / 3 * 3
-	blocky := row / 3 * 3
-	for i:=0; i<9; i++ {
-		bx := blockx + i % 3
-		by := blocky + i / 3
-		if s.values[row][i] == value || s.values[i][col] == value || s.values[by][bx] == value {
-			return nil
+	for i := 0; i < 9; i++ {
+		if s.values[row][i] == value || s.values[i][col] == value || s.values[row/3*3+i/3][col/3*3+i%3] == value {
+			return nil // row, column or block conflict
 		}
 	}
-	copy := s
 	copy.values[row][col] = value
-	copy.position++
 	return &copy
 }
 
+func (s sudoku) Print() {
+	for _, row := range s.values {
+		for _, value := range row {
+			if value == 0 {
+				fmt.Print("  ")
+			} else {
+				fmt.Printf(" %d", value)
+			}
+		}
+		fmt.Println()
+	}
+}
+
 func main() {
-	var s sudoku
+	s := newSudoku([9][9]int{
+		{0, 0, 6, 9, 0, 5, 0, 0, 2},
+		{0, 4, 0, 0, 0, 0, 8, 0, 0},
+		{0, 0, 0, 0, 1, 0, 0, 4, 5},
+		{0, 8, 0, 6, 0, 4, 7, 0, 0},
+		{0, 0, 0, 0, 2, 0, 0, 0, 9},
+		{7, 0, 0, 0, 0, 0, 0, 0, 0},
+		{0, 0, 0, 0, 0, 0, 2, 0, 0},
+		{0, 0, 1, 0, 0, 7, 0, 6, 0},
+		{0, 3, 0, 4, 6, 0, 0, 0, 1}})
+	fmt.Println("Solving:")
+	s.Print()
 	result := solve.NewSolver(s).
 		Algorithm(solve.DepthFirst).
 		Solve()
-	fmt.Println("Visited:", result.Visited)
 	n := len(result.Solution)
 	if n == 0 {
 		fmt.Println("No solution found")
 	} else {
-		fmt.Printf("Solution: %v \n", result.Solution[n-1].(sudoku).values)
+		fmt.Println("Solution:")
+		result.Solution[n-1].(sudoku).Print()
 	}
 }

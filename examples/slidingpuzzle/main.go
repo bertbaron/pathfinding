@@ -224,7 +224,7 @@ func cheapestPathConstraint() solve.Constraint {
 }
 
 func noLoopConstraint(depth int) solve.Constraint {
-	return solve.NoLoopConstraint(depth, func (a, b solve.State) bool {
+	return solve.NoLoopConstraint(depth, func(a, b solve.State) bool {
 		return a.(puzzleState).board == b.(puzzleState).board
 	})
 }
