@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"sort"
 	"testing"
 	"unicode"
 )
@@ -87,53 +88,117 @@ var testNoLoopConstraint = NoLoopConstraint(99999, same)
 var testCPMap = make(cpMap)
 var testCheapestPathConstraint = CheapestPathConstraint(&testCPMap)
 
-func testSolve(t *testing.T, graph graph, algorithm Algorithm, constraint Constraint, limit float64, solution string, costs float64) {
-	result := NewSolver(create(graph)).
+type goalCost struct {
+	goal string
+	cost float64
+}
+
+func equalGoalCost(a, b []goalCost) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, value := range a {
+		if b[i] != value {
+			return false
+		}
+	}
+	return true
+}
+
+type sortableGoals []goalCost
+
+func (s sortableGoals) Len() int {
+	return len(s)
+}
+
+func (s sortableGoals) Less(i, j int) bool {
+	return s[i].goal < s[j].goal
+}
+
+func (s sortableGoals) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func solveAll(solver Solver) []goalCost {
+	results := make([]goalCost, 0)
+	result := solver.Solve()
+	for len(result.Solution) > 0 {
+		goalState := result.Solution[len(result.Solution)-1].(state)
+		results = append(results, goalCost{goalState.node, goalState.cost})
+		result = solver.Solve()
+	}
+	return results
+}
+
+func testSolve(t *testing.T, graph graph, algorithm Algorithm, constraint Constraint, limit float64, expected []goalCost) {
+	solver := NewSolver(create(graph)).
 		Algorithm(algorithm).
 		Constraint(constraint).
-		Limit(limit).
-		Solve()
+		Limit(limit)
+	actual := solveAll(solver)
 
 	name := fmt.Sprintf("(%v,%v)", algorithm, constraint)
-	if len(result.Solution) == 0 {
-		t.Errorf("%v - Expected %v, but no solution found", name, solution)
+	if algorithm == Astar || algorithm == BreadthFirst {
+		if !equalGoalCost(actual, expected) {
+			t.Errorf("%v - Expected %v but found %v", name, expected, actual)
+		}
 		return
 	}
-	actual := result.Solution[len(result.Solution)-1]
-	state := actual.(state)
-	if state.node != solution {
-		t.Errorf("%v - Expected %v, but found %v", name, solution, state.node)
+	if algorithm == IDAstar {
+		// TODO check for empty actual and expected
+		if actual[0] != expected[0] {
+			t.Errorf("%v - Expected %v but found %v", name, expected[0], actual[0])
+		}
 		return
 	}
-	if state.cost != costs {
-		t.Errorf("%v - Expected cost %v, but found %v", name, costs, state.cost)
+	if algorithm == DepthFirst {
+		sort.Sort(sortableGoals(expected))
+		sort.Sort(sortableGoals(actual))
+		if !equalGoalCost(actual, expected) {
+			t.Errorf("%v - Expected %v but found %v", name, expected, actual)
+		}
 		return
 	}
+
+	//if len(result.Solution) == 0 {
+	//	t.Errorf("%v - Expected %v, but no solution found", name, solution)
+	//	return
+	//}
+	//actual := result.Solution[len(result.Solution) - 1]
+	//state := actual.(state)
+	//if state.node != solution {
+	//	t.Errorf("%v - Expected %v, but found %v", name, solution, state.node)
+	//	return
+	//}
+	//if state.cost != costs {
+	//	t.Errorf("%v - Expected cost %v, but found %v", name, costs, state.cost)
+	//	return
+	//}
 }
 
 // Solves the problem with all algorithms and constraints that should return in the optimal solution
-func testSolveAllAlgorithms(t *testing.T, graph graph, includeBF bool, solution string, costs float64) {
-	testSolve(t, graph, Astar, testNoConstraint, math.MaxFloat64, solution, costs)
-	testSolve(t, graph, Astar, testNoReturnConstraint, math.MaxFloat64, solution, costs)
-	testSolve(t, graph, Astar, testNoLoopConstraint, math.MaxFloat64, solution, costs)
-	testSolve(t, graph, Astar, testCheapestPathConstraint, math.MaxFloat64, solution, costs)
+func testSolveAllAlgorithms(t *testing.T, graph graph, includeBF bool, expected []goalCost) {
+	testSolve(t, graph, Astar, testNoConstraint, math.MaxFloat64, expected)
+	testSolve(t, graph, Astar, testNoReturnConstraint, math.MaxFloat64, expected)
+	testSolve(t, graph, Astar, testNoLoopConstraint, math.MaxFloat64, expected)
+	testSolve(t, graph, Astar, testCheapestPathConstraint, math.MaxFloat64, expected)
 
-	testSolve(t, graph, IDAstar, testNoConstraint, math.MaxFloat64, solution, costs)
-	testSolve(t, graph, IDAstar, testNoReturnConstraint, math.MaxFloat64, solution, costs)
-	testSolve(t, graph, IDAstar, testNoLoopConstraint, math.MaxFloat64, solution, costs)
-	testSolve(t, graph, IDAstar, testCheapestPathConstraint, math.MaxFloat64, solution, costs)
+	testSolve(t, graph, IDAstar, testNoConstraint, math.MaxFloat64, expected)
+	testSolve(t, graph, IDAstar, testNoReturnConstraint, math.MaxFloat64, expected)
+	testSolve(t, graph, IDAstar, testNoLoopConstraint, math.MaxFloat64, expected)
+	testSolve(t, graph, IDAstar, testCheapestPathConstraint, math.MaxFloat64, expected)
 
-	testSolve(t, graph, DepthFirst, testNoConstraint, costs, solution, costs)
-	testSolve(t, graph, DepthFirst, testNoReturnConstraint, costs, solution, costs)
-	testSolve(t, graph, DepthFirst, testNoLoopConstraint, costs, solution, costs)
-	testSolve(t, graph, DepthFirst, testCheapestPathConstraint, costs, solution, costs)
+	testSolve(t, graph, DepthFirst, testNoConstraint, math.MaxFloat64, expected)
+	testSolve(t, graph, DepthFirst, testNoReturnConstraint, math.MaxFloat64, expected)
+	testSolve(t, graph, DepthFirst, testNoLoopConstraint, math.MaxFloat64, expected)
+	testSolve(t, graph, DepthFirst, testCheapestPathConstraint, math.MaxFloat64, expected)
 
 	// BF is only optimal if the length of costs corresonds with the length of the path
 	if includeBF {
-		testSolve(t, graph, BreadthFirst, testNoConstraint, math.MaxFloat64, solution, costs)
-		testSolve(t, graph, BreadthFirst, testNoReturnConstraint, math.MaxFloat64, solution, costs)
-		testSolve(t, graph, BreadthFirst, testNoLoopConstraint, math.MaxFloat64, solution, costs)
-		testSolve(t, graph, BreadthFirst, testCheapestPathConstraint, math.MaxFloat64, solution, costs)
+		testSolve(t, graph, BreadthFirst, testNoConstraint, math.MaxFloat64, expected)
+		testSolve(t, graph, BreadthFirst, testNoReturnConstraint, math.MaxFloat64, expected)
+		testSolve(t, graph, BreadthFirst, testNoLoopConstraint, math.MaxFloat64, expected)
+		testSolve(t, graph, BreadthFirst, testCheapestPathConstraint, math.MaxFloat64, expected)
 	}
 }
 
@@ -141,7 +206,8 @@ func TestSimpleProblem(t *testing.T) {
 	g := make(graph)
 	g["a"] = []edge{{"b", 1}, {"c", 1}}
 	g["b"] = []edge{{"D", 1}, {"c", 1}}
-	testSolveAllAlgorithms(t, g, true, "D", 2)
+	expected := []goalCost{{"D", 2}}
+	testSolveAllAlgorithms(t, g, true, expected)
 }
 
 func TestOptimalEvenIfPathLooksBad(t *testing.T) {
@@ -153,7 +219,8 @@ func TestOptimalEvenIfPathLooksBad(t *testing.T) {
 	g["bb"] = []edge{{"B", 200}}
 	g["cc"] = []edge{{"C", 100}}
 	g["dd"] = []edge{{"D", 1}}
-	testSolveAllAlgorithms(t, g, false, "D", 21)
+	expected := []goalCost{{"D", 21}, {"C", 116.0}, {"B", 202.0}}
+	testSolveAllAlgorithms(t, g, false, expected)
 }
 
 func TestIDAStarWithInfinitContour(t *testing.T) {

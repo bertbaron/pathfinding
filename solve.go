@@ -55,22 +55,26 @@ type result struct {
 	contour  float64
 	visited  int
 	expanded int
+
+	next *func() result
 }
 
 func generalSearch(queue strategy, visited int, expanded int, constr iconstraint, limit float64, context Context) result {
 	contour := math.Inf(1)
-	constr.reset()
 	for {
 		n := queue.Take()
 		if n == nil {
-			return result{nil, contour, visited, expanded}
+			return result{nil, contour, visited, expanded, nil}
 		}
 		visited++
 		if constr.onVisit(n) {
 			continue
 		}
 		if n.state.IsGoal(context) {
-			return result{n, contour, visited, expanded}
+			next := func() result {
+				return generalSearch(queue, visited, expanded, constr, limit, context)
+			}
+			return result{n, contour, visited, expanded, &next}
 		}
 		for _, child := range n.state.Expand(context) {
 			childNode := &node{n, child, math.Max(n.value, child.Cost(context)+child.Heuristic(context))}
@@ -94,7 +98,9 @@ func idaStar(rootState State, constraint iconstraint, limit float64, context Con
 	for true {
 		s := depthFirst()
 		s.Add(&node{nil, rootState, rootState.Cost(context) + rootState.Heuristic(context)})
+		constraint.reset()
 		lastResult := generalSearch(s, visited, expanded, constraint, contour, context)
+		lastResult.next = nil
 		if lastResult.node != nil || lastResult.contour > limit || math.IsInf(lastResult.contour, 1) || math.IsNaN(lastResult.contour) {
 			return lastResult
 		}
@@ -113,12 +119,37 @@ func toSlice(node *node) []State {
 	return append(toSlice(node.parent), node.state)
 }
 
-func solve(ss solver) Result {
+func toResult(r *result) Result {
+	return Result{toSlice(r.node), r.visited, r.expanded}
+}
+
+type solver struct {
+	rootState  State
+	algorithm  Algorithm
+	constraint Constraint
+	limit      float64
+	context    interface{}
+
+	started bool
+	result  *result
+}
+
+func solve(ss *solver) Result {
+	if ss.started {
+		if ss.result.next == nil { // no more possible solutions
+			return Result{[]State{}, ss.result.visited, ss.result.expanded}
+		}
+		nextResult := (*ss.result.next)()
+		ss.result = &nextResult
+		return toResult(ss.result)
+	}
+	ss.started = true
 	context := Context{ss.context}
 	constraint := ss.constraint.(iconstraint)
 	if ss.algorithm == IDAstar {
-		result := idaStar(ss.rootState, constraint, ss.limit, context)
-		return Result{toSlice(result.node), result.visited, result.expanded}
+		nextResult := idaStar(ss.rootState, constraint, ss.limit, context)
+		ss.result = &nextResult
+		return toResult(ss.result)
 	}
 	var s strategy
 	switch ss.algorithm {
@@ -131,8 +162,10 @@ func solve(ss solver) Result {
 	}
 	s.Add(&node{nil, ss.rootState, ss.rootState.Cost(context) + ss.rootState.Heuristic(context)})
 
-	result := generalSearch(s, 0, 0, constraint, ss.limit, context)
-	return Result{toSlice(result.node), result.visited, result.expanded}
+	constraint.reset()
+	nextResult := generalSearch(s, 0, 0, constraint, ss.limit, context)
+	ss.result = &nextResult
+	return toResult(ss.result)
 }
 
 // Solver to solve the problem.
@@ -153,13 +186,6 @@ type Solver interface {
 
 	// Solves the problem returning the result
 	Solve() Result
-}
-type solver struct {
-	rootState  State
-	algorithm  Algorithm
-	constraint Constraint
-	limit      float64
-	context    interface{}
 }
 
 func (s *solver) Algorithm(algorithm Algorithm) Solver {
@@ -183,10 +209,10 @@ func (s *solver) Context(context interface{}) Solver {
 }
 
 func (s *solver) Solve() Result {
-	return solve(*s)
+	return solve(s)
 }
 
 // NewSolver creates a new solver
 func NewSolver(rootState State) Solver {
-	return &solver{rootState, Astar, NoConstraint(), math.Inf(1), nil}
+	return &solver{rootState, Astar, NoConstraint(), math.Inf(1), nil, false, nil}
 }
