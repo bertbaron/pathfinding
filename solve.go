@@ -59,8 +59,7 @@ type result struct {
 	next *func() result
 }
 
-func generalSearch(queue strategy, visited int, expanded int, constr iconstraint, limit float64, context Context) result {
-	contour := math.Inf(1)
+func generalSearch(queue strategy, visited int, expanded int, constr iconstraint, ubound float64, limit float64, contour float64, context Context) result {
 	for {
 		n := queue.Take()
 		if n == nil {
@@ -70,9 +69,9 @@ func generalSearch(queue strategy, visited int, expanded int, constr iconstraint
 		if constr.onVisit(n) {
 			continue
 		}
-		if n.state.IsGoal(context) {
+		if n.state.IsGoal(context) && n.value > ubound { // IDA* regenerates previous goal nodes, we skip those using the under bound
 			next := func() result {
-				return generalSearch(queue, visited, expanded, constr, limit, context)
+				return generalSearch(queue, visited, expanded, constr, ubound, limit, contour, context)
 			}
 			return result{n, contour, visited, expanded, &next}
 		}
@@ -95,15 +94,17 @@ func idaStar(rootState State, constraint iconstraint, limit float64, context Con
 	visited := 0
 	expanded := 0
 	contour := 0.0
+	ubound := -1.0
 	for true {
 		s := depthFirst()
 		s.Add(&node{nil, rootState, rootState.Cost(context) + rootState.Heuristic(context)})
 		constraint.reset()
-		lastResult := generalSearch(s, visited, expanded, constraint, contour, context)
+		lastResult := generalSearch(s, visited, expanded, constraint, ubound, contour, math.Inf(1), context)
 		lastResult.next = nil
 		if lastResult.node != nil || lastResult.contour > limit || math.IsInf(lastResult.contour, 1) || math.IsNaN(lastResult.contour) {
 			return lastResult
 		}
+		ubound = contour
 		visited = lastResult.visited
 		expanded = lastResult.expanded
 		contour = lastResult.contour
@@ -163,7 +164,7 @@ func solve(ss *solver) Result {
 	s.Add(&node{nil, ss.rootState, ss.rootState.Cost(context) + ss.rootState.Heuristic(context)})
 
 	constraint.reset()
-	nextResult := generalSearch(s, 0, 0, constraint, ss.limit, context)
+	nextResult := generalSearch(s, 0, 0, constraint, -1.0, ss.limit, math.Inf(1), context)
 	ss.result = &nextResult
 	return toResult(ss.result)
 }
