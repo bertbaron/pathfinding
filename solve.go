@@ -38,7 +38,7 @@ type Result struct {
 	Solution []State
 
 	// Number of nodes visited (dequeued) by the algorithm
-	Visited int
+	Visited  int
 
 	// Number of nodes expanded (enqueued) by the algorithm
 	Expanded int
@@ -56,9 +56,12 @@ type result struct {
 	visited  int
 	expanded int
 
-	next *func() result
+	next     *func() result
 }
 
+// ubound is an underbound for goal nodes. This is needed when IDA* is used to find multiple goal nodes to skip previously generated goal nodes
+// limit is the maximum cost limit (inclusive)
+// contour should be set to math.Inf(1). This value is set to the lowest cost encouterd >limit. The parameter is needed when recursively invoked
 func generalSearch(queue strategy, visited int, expanded int, constr iconstraint, ubound float64, limit float64, contour float64, context Context) result {
 	for {
 		n := queue.Take()
@@ -69,14 +72,14 @@ func generalSearch(queue strategy, visited int, expanded int, constr iconstraint
 		if constr.onVisit(n) {
 			continue
 		}
-		if n.state.IsGoal(context) && n.value > ubound { // IDA* regenerates previous goal nodes, we skip those using the under bound
+		if n.state.IsGoal(context) && n.value > ubound {
 			next := func() result {
 				return generalSearch(queue, visited, expanded, constr, ubound, limit, contour, context)
 			}
 			return result{n, contour, visited, expanded, &next}
 		}
 		for _, child := range n.state.Expand(context) {
-			childNode := &node{n, child, math.Max(n.value, child.Cost(context)+child.Heuristic(context))}
+			childNode := &node{n, child, math.Max(n.value, child.Cost(context) + child.Heuristic(context))}
 			if constr.onExpand(childNode) {
 				continue
 			}
@@ -90,25 +93,40 @@ func generalSearch(queue strategy, visited int, expanded int, constr iconstraint
 	}
 }
 
-func idaStar(rootState State, constraint iconstraint, limit float64, context Context) result {
+func idaStar(rootState State, constraint iconstraint, contour float64, ubound float64, limit float64, context Context, nextfn *func() result) result {
 	visited := 0
 	expanded := 0
-	contour := 0.0
-	ubound := -1.0
 	for true {
-		s := depthFirst()
-		s.Add(&node{nil, rootState, rootState.Cost(context) + rootState.Heuristic(context)})
-		constraint.reset()
-		lastResult := generalSearch(s, visited, expanded, constraint, ubound, contour, math.Inf(1), context)
-		lastResult.next = nil
-		if lastResult.node != nil || lastResult.contour > limit || math.IsInf(lastResult.contour, 1) || math.IsNaN(lastResult.contour) {
+		var lastResult result
+		if nextfn != nil {
+			fn := *nextfn
+			nextfn = nil
+			lastResult = fn()
+		} else {
+			s := depthFirst()
+			s.Add(&node{nil, rootState, rootState.Cost(context) + rootState.Heuristic(context)})
+			constraint.reset()
+			lastResult = generalSearch(s, visited, expanded, constraint, ubound, contour, math.Inf(1), context)
+		}
+		if lastResult.node != nil {
+			// Found a solution
+			underlying := lastResult.next
+			nextIdaStarFn := func() result {
+				return idaStar(rootState, constraint, contour, ubound, limit, context, underlying)
+			}
+			lastResult.next = &nextIdaStarFn
 			return lastResult
 		}
+		if lastResult.contour > limit || math.IsInf(lastResult.contour, 1) || math.IsNaN(lastResult.contour) {
+			// No (more) solutions
+			lastResult.next = nil
+			return lastResult
+		}
+		lastResult.next = nil
 		ubound = contour
 		visited = lastResult.visited
 		expanded = lastResult.expanded
 		contour = lastResult.contour
-		//fmt.Printf("contour: %v, visited: %v\n", contour, visited)
 	}
 	panic("Shouldn't be reached")
 }
@@ -131,13 +149,14 @@ type solver struct {
 	limit      float64
 	context    interface{}
 
-	started bool
-	result  *result
+	started    bool
+	result     *result
 }
 
 func solve(ss *solver) Result {
 	if ss.started {
-		if ss.result.next == nil { // no more possible solutions
+		if ss.result.next == nil {
+			// no more possible solutions
 			return Result{[]State{}, ss.result.visited, ss.result.expanded}
 		}
 		nextResult := (*ss.result.next)()
@@ -148,7 +167,7 @@ func solve(ss *solver) Result {
 	context := Context{ss.context}
 	constraint := ss.constraint.(iconstraint)
 	if ss.algorithm == IDAstar {
-		nextResult := idaStar(ss.rootState, constraint, ss.limit, context)
+		nextResult := idaStar(ss.rootState, constraint, 0.0, -1.0, ss.limit, context, nil)
 		ss.result = &nextResult
 		return toResult(ss.result)
 	}

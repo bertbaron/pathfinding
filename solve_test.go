@@ -138,19 +138,19 @@ func testSolve(t *testing.T, graph graph, algorithm Algorithm, constraint Constr
 	actual := solveAll(solver)
 
 	name := fmt.Sprintf("(%v,%v)", algorithm, constraint)
-	if algorithm == Astar || algorithm == BreadthFirst {
+	if algorithm == Astar || algorithm == BreadthFirst || algorithm == IDAstar {
 		if !equalGoalCost(actual, expected) {
 			t.Errorf("%v - Expected %v but found %v", name, expected, actual)
 		}
 		return
 	}
-	if algorithm == IDAstar {
-		// TODO check for empty actual and expected
-		if actual[0] != expected[0] {
-			t.Errorf("%v - Expected %v but found %v", name, expected[0], actual[0])
-		}
-		return
-	}
+	//if algorithm == IDAstar {
+	//	// TODO check for empty actual and expected
+	//	if actual[0] != expected[0] {
+	//		t.Errorf("%v - Expected %v but found %v", name, expected[0], actual[0])
+	//	}
+	//	return
+	//}
 	if algorithm == DepthFirst {
 		sort.Sort(sortableGoals(expected))
 		sort.Sort(sortableGoals(actual))
