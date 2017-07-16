@@ -98,7 +98,7 @@ func main() {
 		result.Solution[n-1].(sudoku).Print()
 
 		result = solver.Solve()
-		if len(result.Solution)>0 {
+		if len(result.Solution) > 0 {
 			fmt.Println("There is more than 1 solution for this sudoku")
 		}
 	}

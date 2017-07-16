@@ -144,13 +144,7 @@ func testSolve(t *testing.T, graph graph, algorithm Algorithm, constraint Constr
 		}
 		return
 	}
-	//if algorithm == IDAstar {
-	//	// TODO check for empty actual and expected
-	//	if actual[0] != expected[0] {
-	//		t.Errorf("%v - Expected %v but found %v", name, expected[0], actual[0])
-	//	}
-	//	return
-	//}
+
 	if algorithm == DepthFirst {
 		sort.Sort(sortableGoals(expected))
 		sort.Sort(sortableGoals(actual))
@@ -159,21 +153,6 @@ func testSolve(t *testing.T, graph graph, algorithm Algorithm, constraint Constr
 		}
 		return
 	}
-
-	//if len(result.Solution) == 0 {
-	//	t.Errorf("%v - Expected %v, but no solution found", name, solution)
-	//	return
-	//}
-	//actual := result.Solution[len(result.Solution) - 1]
-	//state := actual.(state)
-	//if state.node != solution {
-	//	t.Errorf("%v - Expected %v, but found %v", name, solution, state.node)
-	//	return
-	//}
-	//if state.cost != costs {
-	//	t.Errorf("%v - Expected cost %v, but found %v", name, costs, state.cost)
-	//	return
-	//}
 }
 
 // Solves the problem with all algorithms and constraints that should return in the optimal solution
@@ -272,16 +251,6 @@ func testStatistics(t *testing.T, g graph, algorithm Algorithm, constraint Const
 	}
 }
 
-/*
-(deftest test-with-no-loop-constraint
-  (let [graph {:a  [[:a 1] [:b 1]]
-               :b  [[:c 1] [:d 2]]
-               :c  [[:a 1] [:d 1]]
-               :d  [[:E 1]]}]
-    (test-statistics graph :A* {:expanded 22 :visited 12})
-    (test-statistics graph :A* {:expanded  8 :visited  6} :constraint (no-return-constraint))
-    (test-statistics graph :A* {:expanded  6 :visited  5} :constraint (no-loop-constraint))))
-*/
 func TestStatisticsWithDifferentConstraints(t *testing.T) {
 	g := make(graph)
 	g["a"] = []edge{{"a", 1}, {"b", 1}}
