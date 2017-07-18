@@ -277,6 +277,15 @@ Note that, in order to support this, the solver keeps the state of the search in
 true. It is therefore reccommended to not keep a reference to the solver when it is not needed anymore so that it can
 be garbage collected.
 
+## Background
+
+Ever since I followed a course using 'Artificial Intelligence - A Modern Approach' (Stuart Russel and Peter Norvig) I
+have implemented search libraries based on their general search algorithm in different languages for fun. My previous
+version was written in Clojure and is available here: <https://github.com/bertbaron/paad>. This Go implementation is the
+second one I made available on Github.
+
+Over time I extended the basic library with some features like predefined constraints. The result is a generic API which
+is easy to implement and provides a choice of algorithms and tuning options.
 
 ## License
 
