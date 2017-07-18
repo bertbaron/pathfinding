@@ -44,6 +44,16 @@ type Result struct {
 	Expanded int
 }
 
+// Convenience method to test if the result yields a solution
+func (r Result) Solved() bool {
+	return len(r.Solution) > 0
+}
+
+// Convenience method to get the goal state. Can only be called if r.Solved() == true
+func (r Result) GoalState() State {
+	return r.Solution[len(r.Solution)-1]
+}
+
 type node struct {
 	parent *node
 	state  State
@@ -212,6 +222,9 @@ type Solver interface {
 
 	// Solves the problem returning the result
 	Solve() Result
+
+	// True if the search is completed
+	Completed() bool
 }
 
 func (s *solver) Algorithm(algorithm Algorithm) Solver {
@@ -236,6 +249,10 @@ func (s *solver) Context(context interface{}) Solver {
 
 func (s *solver) Solve() Result {
 	return solve(s)
+}
+
+func (s *solver) Completed() bool {
+	return s.started && s.result.next == nil
 }
 
 // NewSolver creates a new solver

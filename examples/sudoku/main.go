@@ -90,15 +90,13 @@ func main() {
 	solver := solve.NewSolver(s).
 		Algorithm(solve.DepthFirst)
 	result := solver.Solve()
-	n := len(result.Solution)
-	if n == 0 {
+	if !result.Solved() {
 		fmt.Println("No solution found")
 	} else {
 		fmt.Println("Solution:")
-		result.Solution[n-1].(sudoku).Print()
+		result.GoalState().(sudoku).Print()
 
-		result = solver.Solve()
-		if len(result.Solution) > 0 {
+		if solver.Solve().Solved() {
 			fmt.Println("There is more than 1 solution for this sudoku")
 		}
 	}
