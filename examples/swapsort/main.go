@@ -150,7 +150,6 @@ func main() {
 	result := solve.NewSolver(state).
 		Context(context).
 		Algorithm(solve.IDAstar).
-		//Constraint(solve.CheapestPathConstraint()).
 		Constraint(solve.CheapestPathConstraint(&constraintMap)).
 		Solve()
 
