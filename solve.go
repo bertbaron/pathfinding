@@ -223,6 +223,10 @@ type Solver interface {
 	// Solves the problem returning the result
 	Solve() Result
 
+	// Convenience method for finding all solutions. The solutions are put in the
+	// given channel. The channel is closed when the solver is completed.
+	SolveAll(solutions chan<- Result)
+
 	// True if the search is completed
 	Completed() bool
 }
@@ -249,6 +253,13 @@ func (s *solver) Context(context interface{}) Solver {
 
 func (s *solver) Solve() Result {
 	return solve(s)
+}
+
+func (s *solver) SolveAll(solutions chan<- Result) {
+	defer close(solutions)
+	for result := s.Solve(); result.Solved(); result = s.Solve() {
+		solutions <- result
+	}
 }
 
 func (s *solver) Completed() bool {

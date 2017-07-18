@@ -271,11 +271,33 @@ A custom map implementation needs to be provided for efficient memory usage and 
 
 ### Finding all solutions
 
-After a solution have been found, a subsequent call to ```Solver.Solve()``` will continue the search.
+After a solution have been found, a subsequent call to ```Solver.Solve()``` will continue the search. The following
+examples iterates over all solutions:
+```go
+	for result := solver.Solve(); result.Solved(); result = solver.Solve() {
+	    // do something with the result
+	}
 
-Note that, in order to support this, the solver keeps the state of the search in memory until Solver.Completed() is
-true. It is therefore reccommended to not keep a reference to the solver when it is not needed anymore so that it can
-be garbage collected.
+```
+
+Alternatively the method SolveAll can be used to perform the search in a goroutine and read the solutions from a
+channel:
+```go
+	ch := make(chan Result)
+	go solver.SolveAll(ch)
+	for result := range ch {
+	    // do something with the result
+    }
+```
+
+Note that this method is more eager as it will continue searching for the next solution as soon as space is available
+in the channel.
+
+### Garbage collection
+
+In order to support continuation of the search the solver keeps the state of the search in memory until
+Solver.Completed() == true (or result.Solved() == false). It is therefore recommended to not keep a reference to the
+solver when it is not needed anymore so that it can be garbage collected.
 
 ## Background
 
