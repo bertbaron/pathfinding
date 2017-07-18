@@ -248,7 +248,7 @@ smaller), so the costs will increase while the benefit will typically decrease.
 ##### cheapest-path-constraint
 
 The library also provides a constraint that detects if a state is reached via multiple paths, and
-only continues with the best path to that state. This will for example detect that swapping elemets
+only continues with the best path to that state. This will for example detect that swapping elements
 (1,2) and then (3,4) will result in the same state as swapping first (3,4) and then (1,2) and continue
 with only one of the paths:
 
