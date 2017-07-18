@@ -271,7 +271,14 @@ A custom map implementation needs to be provided for efficient memory usage and 
 
 ### Finding all solutions
 
-After a solution have been found, a subsequent call to ```Solver.Solve()``` will continue the search.
+After a solution have been found, a subsequent call to ```Solver.Solve()``` will continue the search. The following
+examples iterates over all solutions:
+```go
+	for result := solver.Solve(); result.Solved(); result = solver.Solve() {
+	    // do something with the result
+	}
+
+```
 
 Note that, in order to support this, the solver keeps the state of the search in memory until Solver.Completed() is
 true. It is therefore reccommended to not keep a reference to the solver when it is not needed anymore so that it can
