@@ -1,3 +1,4 @@
+// A simple problem to experiment with the different algorithms and options
 package main
 
 import (
