@@ -246,32 +246,13 @@ func generateAndSolve(seed int64) solve.Result {
 }
 
 func main() {
-	//worstSeed := -1
-	//worstVisited := 0
-	//for seed :=0; seed <100; seed++ {
-	//	result := generateAndSolve(int64(seed))
-	//	if result.Visited > worstVisited {
-	//		worstSeed = seed
-	//		worstVisited = result.Visited
-	//	}
-	//	fmt.Printf("Worst: %v (%v)\n", worstSeed, worstVisited)
-	//}
-
-	//f, err := os.Create("cpu.prof")
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//pprof.StartCPUProfile(f)
-	//defer pprof.StopCPUProfile()
-
 	result := generateAndSolve(8)
-	n := len(result.Solution)
-	if n == 0 {
+	if !result.Solved() {
 		fmt.Println("No solution found")
 	} else {
-		moves := make([]string, n-1)
-		for i, state := range result.Solution[1:] {
-			moves[i] = state.(puzzleState).dir.String()
+		moves := make([]string, 0)
+		for _, state := range result.Solution[1:] {
+			moves = append(moves, state.(puzzleState).dir.String())
 		}
 		fmt.Printf("Solution in %v steps: %s\n", len(result.Solution)-1, strings.Join(moves, " "))
 		fmt.Printf("visited %d, expanded %d\n", result.Visited, result.Expanded)

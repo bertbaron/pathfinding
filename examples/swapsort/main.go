@@ -146,18 +146,18 @@ func main() {
 	fmt.Printf("Sorting %v in minimal number of swaps of neighbouring elements\n", state)
 	constraintMap := make(cpMap)
 	start := time.Now()
-	solution := solve.NewSolver(state).
+	result := solve.NewSolver(state).
 		Context(context).
 		Algorithm(solve.IDAstar).
 		//Constraint(solve.CheapestPathConstraint()).
 		Constraint(solve.CheapestPathConstraint(&constraintMap)).
 		Solve()
 
-	fmt.Printf("visited: %d, expanded %d, time %0.2fs\n", solution.Visited, solution.Expanded, time.Since(start).Seconds())
-	if len(solution.Solution) == 0 {
+	fmt.Printf("visited: %d, expanded %d, time %0.2fs\n", result.Visited, result.Expanded, time.Since(start).Seconds())
+	if !result.Solved() {
 		fmt.Printf("No solution found\n")
 	} else {
-		fmt.Printf("Solution found in %v steps\n", len(solution.Solution))
+		fmt.Printf("Solution found in %v steps\n", len(result.Solution)-1)
 		//printSolution(solution.Solution)
 	}
 }
