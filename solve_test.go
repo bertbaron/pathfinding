@@ -121,7 +121,7 @@ func (s sortableGoals) Swap(i, j int) {
 
 func solveAll(solver Solver) []goalCost {
 	results := make([]goalCost, 0)
-	for result := solver.Solve(); result.Solved(); result = solver.Solve() {
+	for result := range solver.SolveAll() {
 		goalState := result.Solution[len(result.Solution)-1].(state)
 		results = append(results, goalCost{goalState.node, goalState.cost})
 	}

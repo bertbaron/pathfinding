@@ -283,15 +283,10 @@ examples iterates over all solutions:
 Alternatively the method SolveAll can be used to perform the search in a goroutine and read the solutions from a
 channel:
 ```go
-	ch := make(chan Result)
-	go solver.SolveAll(ch)
-	for result := range ch {
+	for result := range solver.SolveAll() {
 	    // do something with the result
     }
 ```
-
-Note that this method is more eager as it will continue searching for the next solution as soon as space is available
-in the channel.
 
 ### Garbage collection
 
