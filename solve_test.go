@@ -241,11 +241,8 @@ func testStatistics(t *testing.T, g graph, algorithm Algorithm, constraint Const
 		Algorithm(algorithm).
 		Constraint(constraint).
 		Solve()
-	if result.Visited != expVisited {
-		t.Errorf("%v - Expected %v nodes visited, but was %v", name, expVisited, result.Visited)
-	}
-	if result.Expanded != expExpanded {
-		t.Errorf("%v - Expected %v nodes expanded, but was %v", name, expExpanded, result.Expanded)
+	if result.Visited != expVisited || result.Expanded != expExpanded {
+		t.Errorf("%v - Expected %v, %v nodes expanded and visited, but was %v, %v", name, expExpanded, expVisited, result.Expanded, result.Visited)
 	}
 }
 
@@ -255,10 +252,10 @@ func TestStatisticsWithDifferentConstraints(t *testing.T) {
 	g["b"] = []edge{{"c", 1}, {"d", 2}}
 	g["c"] = []edge{{"a", 1}, {"d", 1}}
 	g["d"] = []edge{{"E", 1}}
-	testStatistics(t, g, Astar, testNoConstraint, 27, 16) // currently the test depends on the queue implementation...
-	testStatistics(t, g, Astar, testNoReturnConstraint, 8, 7)
-	testStatistics(t, g, Astar, testNoLoopConstraint, 6, 6)
-	testStatistics(t, g, Astar, testCheapestPathConstraint, 4, 5)
+	testStatistics(t, g, BreadthFirst, testNoConstraint, 23, 14)
+	testStatistics(t, g, BreadthFirst, testNoReturnConstraint, 8, 7)
+	testStatistics(t, g, BreadthFirst, testNoLoopConstraint, 6, 6)
+	testStatistics(t, g, BreadthFirst, testCheapestPathConstraint, 4, 5)
 }
 
 type dummyState struct {
