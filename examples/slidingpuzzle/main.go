@@ -203,14 +203,14 @@ func (p puzzleState) Heuristic(ctx solve.Context) float64 {
 }
 
 // For cheapest path constraint
-type cpMap map[[height][width]byte]solve.CPNode
+type cpMap map[[height][width]byte]float64
 
-func (c cpMap) Get(state solve.State) (value solve.CPNode, ok bool) {
+func (c cpMap) Get(state solve.State) (value float64, ok bool) {
 	value, ok = c[state.(puzzleState).board]
 	return
 }
 
-func (c cpMap) Put(state solve.State, value solve.CPNode) {
+func (c cpMap) Put(state solve.State, value float64) {
 	c[state.(puzzleState).board] = value
 }
 
@@ -237,16 +237,16 @@ func generateAndSolve(seed int64) solve.Result {
 	fmt.Println()
 	start := time.Now()
 	result := solve.NewSolver(puzzle).
-		Algorithm(solve.IDAstar).
+		Algorithm(solve.Astar).
 		//Constraint(noLoopConstraint(12)).
-		//Constraint(cheapestPathConstraint()).
+		Constraint(cheapestPathConstraint()).
 		Solve()
 	fmt.Printf("Time: %.2f sec\n", time.Since(start).Seconds())
 	return result
 }
 
 func main() {
-	result := generateAndSolve(8)
+	result := generateAndSolve(3)
 	if !result.Solved() {
 		fmt.Println("No solution found")
 	} else {

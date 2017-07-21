@@ -68,14 +68,14 @@ func same(a, b State) bool {
 }
 
 // for cheapest-path-constraint
-type cpMap map[string]CPNode
+type cpMap map[string]float64
 
-func (c cpMap) Get(s State) (CPNode, bool) {
+func (c cpMap) Get(s State) (float64, bool) {
 	value, ok := c[s.(state).node]
 	return value, ok
 }
 
-func (c cpMap) Put(s State, value CPNode) {
+func (c cpMap) Put(s State, value float64) {
 	c[s.(state).node] = value
 }
 func (c *cpMap) Clear() {

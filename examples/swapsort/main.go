@@ -120,14 +120,14 @@ func printSolution(context swapContext, states []solve.State) {
 	}
 }
 
-type cpMap map[[maxSize]byte]solve.CPNode
+type cpMap map[[maxSize]byte]float64
 
-func (c cpMap) Get(state solve.State) (solve.CPNode, bool) {
+func (c cpMap) Get(state solve.State) (float64, bool) {
 	value, ok := c[state.(swapState).vector]
 	return value, ok
 }
 
-func (c cpMap) Put(state solve.State, value solve.CPNode) {
+func (c cpMap) Put(state solve.State, value float64) {
 	c[state.(swapState).vector] = value
 }
 

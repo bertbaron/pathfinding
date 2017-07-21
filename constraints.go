@@ -77,25 +77,18 @@ func NoConstraint() Constraint {
 	return noConstraint(false)
 }
 
-// CPNode is used by the CheapestPathConstraint. It is only exposed so that an efficient
-// custom map can be implemented.
-type CPNode struct {
-	value   float64
-	visited bool
-}
-
 // CPMap needs to be implemented to efficiently store the state of the CheapestPathConstraint.
 //
 // A typical implementation will look something like:
 //
-//  type cpMap map[int64]solve.CPNode
+//  type cpMap map[int64]float64
 //
-//  func (c cpMap) Get(state solve.State) (solve.CPNode, bool) {
+//  func (c cpMap) Get(state solve.State) (float64, bool) {
 //  	value, ok := c[state.(swapState).id]
 //  	return value, ok
 //  }
 //
-//  func (c cpMap) Put(state solve.State, value solve.CPNode) {
+//  func (c cpMap) Put(state solve.State, value float64) {
 //  	c[state.(swapState).id] = value
 //  }
 //
@@ -103,8 +96,8 @@ type CPNode struct {
 //  	*c = make(cpMap)
 //  }
 type CPMap interface {
-	Get(state State) (CPNode, bool)
-	Put(state State, value CPNode)
+	Get(state State) (float64, bool)
+	Put(state State, value float64)
 	Clear()
 }
 
@@ -114,8 +107,8 @@ type cheapestPathConstraint struct {
 
 func (c cheapestPathConstraint) onExpand(node *node) bool {
 	current, ok := c.m.Get(node.state)
-	if !ok || node.value < current.value {
-		c.m.Put(node.state, CPNode{node.value, false})
+	if !ok || node.value < current {
+		c.m.Put(node.state, node.value)
 		return false
 	}
 	return true
@@ -123,8 +116,8 @@ func (c cheapestPathConstraint) onExpand(node *node) bool {
 
 func (c cheapestPathConstraint) onVisit(node *node) bool {
 	current, ok := c.m.Get(node.state)
-	if !ok || node.value < current.value || node.value == current.value && !current.visited {
-		c.m.Put(node.state, CPNode{node.value, true})
+	if !ok || node.value <= current {
+		c.m.Put(node.state, node.value)
 		return false
 	}
 	return true
