@@ -34,6 +34,8 @@ var reverse = map[byte]rune{
 	player | goal: '+',
 	box | goal:    '*'}
 
+// -------- main problem. We only expose the states in which a block is pushed though to limit the search space
+//          for the main search.
 type sokoban struct {
 	// the static world, without player and boxes
 	world []byte
