@@ -59,7 +59,7 @@ func valueOf(s *sokoban, m *mainstate, position int) byte {
 	if boxidx < len(m.boxes) && m.boxes[boxidx] == uint16(position) {
 		additional |= box
 	}
-	return s.world[position] | player
+	return s.world[position] | additional
 }
 
 func print(s sokoban, m mainstate) {
@@ -79,10 +79,6 @@ func (s mainstate) Heuristic(ctx solve.Context) float64 {
 	return 0
 }
 
-func (s mainstate) Expand(ctx solve.Context) []solve.State {
-	return []solve.State{}
-}
-
 func (s mainstate) IsGoal(ctx solve.Context) bool {
 	for i, value := range ctx.Custom.(sokoban).goals {
 		if s.boxes[i] != value {
@@ -90,6 +86,60 @@ func (s mainstate) IsGoal(ctx solve.Context) bool {
 		}
 	}
 	return true
+}
+
+func (s mainstate) Expand(ctx solve.Context) []solve.State {
+	var children []solve.State
+	return children
+}
+
+// -------------- Sub problem for moving the player to all positions in which a box can be moved -----------
+
+type walkcontext struct {
+	// the static world, without player but with boxes because we don't move them here
+	world []byte
+	goalpositions []int
+	width int
+}
+
+type walkstate struct {
+	position int
+	cost int
+}
+
+func (s walkstate) Cost(ctx solve.Context) float64 {
+	return float64(s.cost)
+}
+
+func (s walkstate) Heuristic(ctx solve.Context) float64 {
+	return 0
+}
+
+func (s walkstate) IsGoal(ctx solve.Context) bool {
+	wc := ctx.Custom.(walkcontext)
+	for _, goal := range wc.goalpositions {
+		if s.position == goal {
+			return true
+		}
+	}
+	return false
+}
+
+func (s walkstate) Expand(ctx solve.Context) []solve.State {
+	var children []solve.State
+	wc := ctx.Custom.(walkcontext)
+	children = s.addIfValid(children, s.position-1, wc)
+	children = s.addIfValid(children, s.position+1, wc)
+	children = s.addIfValid(children, s.position-wc.width, wc)
+	children = s.addIfValid(children, s.position+wc.width, wc)
+	return children
+}
+
+func (s walkstate) addIfValid(children []solve.State, newPosition int, wc walkcontext) []solve.State {
+	if wc.world[newPosition] & (wall | box) == 0 {
+		return append(children, walkstate{newPosition, s.cost + 1})
+	}
+	return children
 }
 
 func parse(level string) (sokoban, mainstate) {
