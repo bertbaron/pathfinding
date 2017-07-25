@@ -4,9 +4,9 @@ package main
 import (
 	"fmt"
 	"github.com/bertbaron/solve"
+	"math"
 	"sort"
 	"strings"
-	"math"
 )
 
 const (

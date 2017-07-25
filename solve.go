@@ -2,8 +2,8 @@
 package solve
 
 import (
-	"math"
 	"fmt"
+	"math"
 )
 
 // Context can be used to interact with the solver and to maintain a custom context
