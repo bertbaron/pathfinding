@@ -69,6 +69,24 @@ type result struct {
 	next *func() result
 }
 
+func expand(n *node, queue strategy, expanded int, constr iconstraint, limit float64, contour float64, context Context) (newExpanded int, newContour float64) {
+	newExpanded = expanded
+	newContour = contour
+	for _, child := range n.state.Expand(context) {
+		childNode := &node{n, child, math.Max(n.value, child.Cost(context)+child.Heuristic(context))}
+		if constr.onExpand(childNode) {
+			continue
+		}
+		if childNode.value > limit {
+			newContour = math.Min(newContour, childNode.value)
+			continue
+		}
+		queue.Add(childNode)
+		newExpanded++
+	}
+	return
+}
+
 func generalSearch(queue strategy, visited int, expanded int, constr iconstraint, ubound float64, limit float64, contour float64, context Context) result {
 	for {
 		n := queue.Take()
@@ -81,22 +99,12 @@ func generalSearch(queue strategy, visited int, expanded int, constr iconstraint
 		}
 		if n.state.IsGoal(context) && n.value > ubound {
 			next := func() result {
+				expanded, contour = expand(n, queue, expanded, constr, limit, contour, context)
 				return generalSearch(queue, visited, expanded, constr, ubound, limit, contour, context)
 			}
 			return result{n, contour, visited, expanded, &next}
 		}
-		for _, child := range n.state.Expand(context) {
-			childNode := &node{n, child, math.Max(n.value, child.Cost(context)+child.Heuristic(context))}
-			if constr.onExpand(childNode) {
-				continue
-			}
-			if childNode.value > limit {
-				contour = math.Min(contour, childNode.value)
-				continue
-			}
-			queue.Add(childNode)
-			expanded++
-		}
+		expanded, contour = expand(n, queue, expanded, constr, limit, contour, context)
 	}
 }
 

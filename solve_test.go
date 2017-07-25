@@ -36,7 +36,7 @@ func create(graph graph) state {
 	}
 	return state{graph, root, 0.0}
 }
-func expand(s state, edge edge) state {
+func testExpand(s state, edge edge) state {
 	return state{s.graph, edge.target, s.cost + edge.cost}
 }
 
@@ -52,7 +52,7 @@ func (s state) Expand(ctx Context) []State {
 	var children []State
 	if edges, ok := s.graph[s.node]; ok {
 		for _, edge := range edges {
-			children = append(children, expand(s, edge))
+			children = append(children, testExpand(s, edge))
 		}
 	}
 	return children
@@ -198,6 +198,14 @@ func TestOptimalEvenIfPathLooksBad(t *testing.T) {
 	g["dd"] = []edge{{"D", 1}}
 	expected := []goalCost{{"D", 21}, {"C", 116.0}, {"B", 202.0}}
 	testSolveAllAlgorithms(t, g, false, expected)
+}
+
+func TestContinueEvenIfRootIsGoal(t *testing.T) {
+	g := make(graph)
+	g["A"] = []edge{{"B", 1}}
+	g["B"] = []edge{{"C", 1}}
+	expected := []goalCost{{"A", 0}, {"B", 1}, {"C", 2}}
+	testSolveAllAlgorithms(t, g, true, expected)
 }
 
 func TestIDAStarWithInfinitContour(t *testing.T) {
