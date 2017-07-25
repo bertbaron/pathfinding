@@ -7,6 +7,10 @@ import (
 	"math"
 	"sort"
 	"strings"
+	"os"
+	"log"
+	"runtime/pprof"
+	"time"
 )
 
 const (
@@ -106,8 +110,8 @@ func abs(value int) int {
 	return value
 }
 
-func (s mainstate) Heuristic(ctx solve.Context) float64 {
-	world := ctx.Custom.(sokoban)
+// total manhattan distance for all boxes towards their nearest target - O(boxcount^2)
+func minimalManhattan(world sokoban, s mainstate) int {
 	total := 0
 	for _, box := range s.boxes {
 		min := math.MaxInt32
@@ -121,7 +125,23 @@ func (s mainstate) Heuristic(ctx solve.Context) float64 {
 		}
 		total += min
 	}
-	return float64(total)
+	return total
+}
+
+// number of boxes not on a goal position - O(boxcount)
+func displaced(world sokoban, s mainstate) int {
+	displaced := len(s.boxes)
+	for _, box := range s.boxes {
+		displaced -= int(world.world[box] & goal) >> 2
+	}
+	return displaced
+}
+
+func (s mainstate) Heuristic(ctx solve.Context) float64 {
+	world := ctx.Custom.(sokoban)
+	//h := displaced(world, s)
+	h := minimalManhattan(world, s)
+	return float64(h)
 }
 
 func (s mainstate) IsGoal(ctx solve.Context) bool {
@@ -359,8 +379,15 @@ func parse(level string) (sokoban, mainstate) {
 type cpMap map[string]float64
 
 func key(state solve.State) string {
+	// nasty hack, but string seems to be the only variable-size type
+	// supported as map key. Would love to be able to use slices directly
 	s := state.(mainstate)
-	return fmt.Sprintf("%v:%v", s.position, s.boxes)
+	runes := make([]rune, len(s.boxes) + 1)
+	runes[0] = rune(s.position)
+	for i, box := range s.boxes {
+		runes[i+1] = rune(box)
+	}
+	return string(runes)
 }
 
 func (c cpMap) Get(state solve.State) (value float64, ok bool) {
@@ -402,18 +429,28 @@ var level = `
   #####`
 
 func main() {
+	f, err := os.Create("cpu.prof")
+	if err != nil {
+		log.Fatal(err)
+	}
+	pprof.StartCPUProfile(f)
+	defer pprof.StopCPUProfile()
+
 	world, root := parse(level)
 	print(world, root)
+	start := time.Now()
 	result := solve.NewSolver(root).
 		Context(world).
-		Algorithm(solve.IDAstar).
+		Algorithm(solve.Astar).
 		Constraint(cheapestPathConstraint()).
+		//Limit(40).
 		Solve()
-	fmt.Printf("Result:\n ")
-	for _, state := range result.Solution {
-		print(world, state.(mainstate))
-	}
+	fmt.Printf("Time: %.1f seconds\n", time.Since(start).Seconds())
 	if result.Solved() {
+		fmt.Printf("Result:\n ")
+		for _, state := range result.Solution {
+			print(world, state.(mainstate))
+		}
 		fmt.Printf("Solved in %d moves\n", int(result.GoalState().(mainstate).cost))
 	}
 	fmt.Printf("visited %v main nodes\n", result.Visited)
