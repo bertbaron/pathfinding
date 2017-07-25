@@ -3,6 +3,7 @@ package solve
 
 import (
 	"math"
+	"fmt"
 )
 
 // Context can be used to interact with the solver and to maintain a custom context
@@ -147,6 +148,7 @@ func idaStar(rootState State, constraint iconstraint, contour float64, ubound fl
 		visited = lastResult.visited
 		expanded = lastResult.expanded
 		contour = lastResult.contour
+		fmt.Printf("%v - %v\n", contour, visited)
 	}
 	panic("Shouldn't be reached")
 }
