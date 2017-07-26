@@ -294,7 +294,7 @@ func (s walkstate) Expand(ctx solve.Context) []solve.State {
 }
 
 func (s walkstate) addIfValid(children []solve.State, newPosition int, wc walkcontext) []solve.State {
-	if wc.world[newPosition]&(wall|box) == 0 {
+	if wc.world[newPosition]&wall == 0 {
 		return append(children, walkstate{newPosition, s.cost + 1})
 	}
 	return children
@@ -323,7 +323,7 @@ func getWalkMoves(wc sokoban, s mainstate, targets []int) []walkstate {
 	context.world = make([]byte, len(wc.world))
 	copy(context.world, wc.world)
 	for _, boxposition := range s.boxes {
-		context.world[boxposition] |= box
+		context.world[boxposition] |= wall
 	}
 	rootstate := walkstate{s.position, 0}
 	wsMap := make(walkstateMap, len(wc.world))
@@ -449,7 +449,7 @@ func main() {
 		Context(world).
 		Algorithm(solve.IDAstar).
 		Constraint(cheapestPathConstraint()).
-		Limit(38).
+		Limit(40).
 		Solve()
 	fmt.Printf("Time: %.1f seconds\n", time.Since(start).Seconds())
 	if result.Solved() {
