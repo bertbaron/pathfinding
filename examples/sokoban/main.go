@@ -301,19 +301,22 @@ func (s walkstate) addIfValid(children []solve.State, newPosition int, wc walkco
 	return children
 }
 
-type walkstateMap map[int]float64
+// Example of a CPMap implementation based on a slice
+type walkstateMap []float64
 
 func (c walkstateMap) Get(state solve.State) (float64, bool) {
-	value, ok := c[state.(walkstate).position]
-	return value, ok
+	value := c[state.(walkstate).position];
+	return value, value >= 0
 }
 
 func (c walkstateMap) Put(state solve.State, value float64) {
 	c[state.(walkstate).position] = value
 }
 
-func (c *walkstateMap) Clear() {
-	*c = make(walkstateMap)
+func (c walkstateMap) Clear() {
+	for i := range c {
+		c[i] = -1
+	}
 }
 
 func getWalkMoves(wc sokoban, s mainstate, targets []int) []walkstate {
@@ -324,13 +327,13 @@ func getWalkMoves(wc sokoban, s mainstate, targets []int) []walkstate {
 		context.world[boxposition] |= box
 	}
 	rootstate := walkstate{s.position, 0}
-	var wsMap walkstateMap
+	wsMap := make(walkstateMap, len(wc.world))
 	solver := solve.NewSolver(rootstate).
 		Context(context).
-		Constraint(solve.CheapestPathConstraint(&wsMap)).
+		Constraint(solve.CheapestPathConstraint(wsMap)).
 		Algorithm(solve.BreadthFirst)
 	solutions := make([]walkstate, 0)
-	for solution := range solver.SolveAll() {
+	for solution := solver.Solve(); solution.Solved(); solution = solver.Solve() {
 		solutions = append(solutions, solution.GoalState().(walkstate))
 	}
 	return solutions
@@ -441,9 +444,9 @@ func main() {
 	start := time.Now()
 	result := solve.NewSolver(root).
 		Context(world).
-		Algorithm(solve.Astar).
+		Algorithm(solve.IDAstar).
 		Constraint(cheapestPathConstraint()).
-		//Limit(40).
+		Limit(38).
 		Solve()
 	fmt.Printf("Time: %.1f seconds\n", time.Since(start).Seconds())
 	if result.Solved() {
