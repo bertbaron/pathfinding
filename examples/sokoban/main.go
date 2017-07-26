@@ -335,6 +335,9 @@ func getWalkMoves(wc sokoban, s mainstate, targets []int) []walkstate {
 	solutions := make([]walkstate, 0)
 	for solution := solver.Solve(); solution.Solved(); solution = solver.Solve() {
 		solutions = append(solutions, solution.GoalState().(walkstate))
+		if len(solutions) == len(targets) {
+			break;
+		}
 	}
 	return solutions
 }
