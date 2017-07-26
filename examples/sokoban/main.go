@@ -4,7 +4,6 @@ package main
 import (
 	"fmt"
 	"github.com/bertbaron/solve"
-	"math"
 	"sort"
 	"strings"
 	"os"
@@ -113,16 +112,17 @@ func abs(value int) int {
 
 // calculates a heuristic of moving a single box to its nearest goal
 func boxHeuristic(world sokoban, box uint16) int {
-	min := math.MaxInt32
-	bx, by := int(box)%world.width, int(box)/world.width
-	for _, goal := range world.goals {
-		gx, gy := int(goal)%world.width, int(goal)/world.width
-		md := abs(gx-bx) + abs(gy-by)
-		if md < min {
-			min = md
-		}
-	}
-	return min
+	return costForMovingBlockToNearestGoal(world, int(box))
+	//min := math.MaxInt32
+	//bx, by := int(box)%world.width, int(box)/world.width
+	//for _, goal := range world.goals {
+	//	gx, gy := int(goal)%world.width, int(goal)/world.width
+	//	md := abs(gx-bx) + abs(gy-by)
+	//	if md < min {
+	//		min = md
+	//	}
+	//}
+	//return min
 }
 
 // total of all box heuristics
@@ -136,10 +136,6 @@ func totalHeuristic(world sokoban, s mainstate) int {
 
 func (s mainstate) Heuristic(ctx solve.Context) float64 {
 	return float64(s.heuristic)
-	//world := ctx.Custom.(sokoban)
-	////h := displaced(world, s)
-	//h := minimalManhattan(world, s)
-	//return float64(h)
 }
 
 func (s mainstate) IsGoal(ctx solve.Context) bool {
@@ -341,6 +337,79 @@ func getWalkMoves(wc sokoban, s mainstate, targets []int) []walkstate {
 	return solutions
 }
 
+// ------------ Sub problem of moving a single box to its nearest target
+
+type movestate struct {
+	position int
+	cost     int
+}
+
+func (s movestate) Cost(ctx solve.Context) float64 {
+	return float64(s.cost)
+}
+
+func (s movestate) Heuristic(ctx solve.Context) float64 {
+	return 0
+}
+
+func (s movestate) IsGoal(ctx solve.Context) bool {
+	wc := ctx.Custom.(sokoban)
+	return wc.world[s.position] & goal != 0
+}
+
+func (s movestate) Expand(ctx solve.Context) []solve.State {
+	children := make([]solve.State, 0, 4)
+	wc := ctx.Custom.(sokoban)
+	left := isEmpty(wc.world[s.position-1])
+	right := isEmpty(wc.world[s.position+1])
+	up := isEmpty(wc.world[s.position-wc.width])
+	down := isEmpty(wc.world[s.position+wc.width])
+	if left && right {
+		children = append(children, movestate{s.position-1, s.cost + 1})
+		children = append(children, movestate{s.position+1, s.cost + 1})
+	}
+	if up && down {
+		children = append(children, movestate{s.position-wc.width, s.cost + 1})
+		children = append(children, movestate{s.position+wc.width, s.cost + 1})
+	}
+	return children
+}
+
+// TODO Efficiently share with walkstateMap
+type movestateMap []float64
+
+func (c movestateMap) Get(state solve.State) (float64, bool) {
+	value := c[state.(movestate).position];
+	return value, value >= 0
+}
+
+func (c movestateMap) Put(state solve.State, value float64) {
+	c[state.(movestate).position] = value
+}
+
+func (c movestateMap) Clear() {
+	for i := range c {
+		c[i] = -1
+	}
+}
+
+// Returns the cost of moving a box to its nearest goal
+func costForMovingBlockToNearestGoal(wc sokoban, position int) int {
+	rootstate := movestate{position, 0}
+	msMap := make(movestateMap, len(wc.world))
+	result := solve.NewSolver(rootstate).
+		Context(wc).
+		Constraint(solve.CheapestPathConstraint(msMap)).
+		Algorithm(solve.BreadthFirst).
+		Solve()
+	if result.Solved() {
+		return result.GoalState().(movestate).cost
+	}
+	return 1000000 // FIXME: should be handled correctly by the main search
+}
+
+
+
 func parse(level string) (sokoban, mainstate) {
 	width := 0
 	lines := strings.Split(level, "\n")
@@ -414,6 +483,39 @@ func cheapestPathConstraint() solve.Constraint {
 	return solve.CheapestPathConstraint(&m)
 }
 
+type cpkey [32]uint16
+
+// For cheapest path constraint
+type cpMap2 map[cpkey]float64
+
+func key2(state solve.State) cpkey {
+	var key cpkey
+	s := state.(mainstate)
+	key[0] = uint16(s.position)
+	for i, box := range s.boxes {
+		key[i+1] = box
+	}
+	return key
+}
+
+func (c cpMap2) Get(state solve.State) (value float64, ok bool) {
+	value, ok = c[key2(state)]
+	return
+}
+
+func (c cpMap2) Put(state solve.State, value float64) {
+	c[key2(state)] = value
+}
+
+func (c *cpMap2) Clear() {
+	*c = make(cpMap2)
+}
+
+func cheapestPathConstraint2() solve.Constraint {
+	var m cpMap2
+	return solve.CheapestPathConstraint(&m)
+}
+
 var simpleLevel = `
 ########
 #     @#
@@ -448,8 +550,8 @@ func main() {
 	result := solve.NewSolver(root).
 		Context(world).
 		Algorithm(solve.IDAstar).
-		Constraint(cheapestPathConstraint()).
-		Limit(40).
+		Constraint(cheapestPathConstraint2()).
+		Limit(44).
 		Solve()
 	fmt.Printf("Time: %.1f seconds\n", time.Since(start).Seconds())
 	if result.Solved() {
@@ -460,4 +562,12 @@ func main() {
 		fmt.Printf("Solved in %d moves\n", int(result.GoalState().(mainstate).cost))
 	}
 	fmt.Printf("visited %v main nodes\n", result.Visited)
+
+	f, err = os.Create("mem.prof")
+	if err != nil {
+		log.Fatal(err)
+	}
+	pprof.WriteHeapProfile(f)
+	f.Close()
+	return
 }
