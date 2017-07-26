@@ -285,7 +285,7 @@ func (s walkstate) IsGoal(ctx solve.Context) bool {
 }
 
 func (s walkstate) Expand(ctx solve.Context) []solve.State {
-	var children []solve.State
+	children := make([]solve.State, 0, 4)
 	wc := ctx.Custom.(walkcontext)
 	children = s.addIfValid(children, s.position-1, wc)
 	children = s.addIfValid(children, s.position+1, wc)
