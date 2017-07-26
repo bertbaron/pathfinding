@@ -148,7 +148,6 @@ func idaStar(rootState State, constraint iconstraint, contour float64, ubound fl
 		visited = lastResult.visited
 		expanded = lastResult.expanded
 		contour = lastResult.contour
-		fmt.Printf("IDA* %v - %v\n", contour, visited)
 	}
 	panic("Shouldn't be reached")
 }

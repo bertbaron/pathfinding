@@ -138,7 +138,13 @@ func (s mainstate) Heuristic(ctx solve.Context) float64 {
 	return float64(s.heuristic)
 }
 
+var lastValue = -1
+
 func (s mainstate) IsGoal(ctx solve.Context) bool {
+	if s.cost + s.heuristic > lastValue {
+		lastValue = s.cost + s.heuristic
+		fmt.Printf("At: %v (%v)\n", lastValue, s.heuristic)
+	}
 	for i, value := range ctx.Custom.(sokoban).goals {
 		if s.boxes[i] != value {
 			return false
@@ -483,7 +489,7 @@ func cheapestPathConstraint() solve.Constraint {
 	return solve.CheapestPathConstraint(&m)
 }
 
-type cpkey [32]uint16
+type cpkey [11]uint16
 
 // For cheapest path constraint
 type cpMap2 map[cpkey]float64
@@ -549,9 +555,9 @@ func main() {
 	start := time.Now()
 	result := solve.NewSolver(root).
 		Context(world).
-		Algorithm(solve.IDAstar).
+		Algorithm(solve.Astar).
 		Constraint(cheapestPathConstraint2()).
-		Limit(44).
+		//Limit(44).
 		Solve()
 	fmt.Printf("Time: %.1f seconds\n", time.Since(start).Seconds())
 	if result.Solved() {
