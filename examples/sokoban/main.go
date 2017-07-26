@@ -55,6 +55,7 @@ type mainstate struct {
 	boxes    []uint16
 	position int
 	cost     int
+	heuristic int
 }
 
 // returns the index of position in the sorted list of positions. Returns -1 if the position is not found
@@ -110,38 +111,35 @@ func abs(value int) int {
 	return value
 }
 
-// total manhattan distance for all boxes towards their nearest target - O(boxcount^2)
-func minimalManhattan(world sokoban, s mainstate) int {
+// calculates a heuristic of moving a single box to its nearest goal
+func boxHeuristic(world sokoban, box uint16) int {
+	min := math.MaxInt32
+	bx, by := int(box)%world.width, int(box)/world.width
+	for _, goal := range world.goals {
+		gx, gy := int(goal)%world.width, int(goal)/world.width
+		md := abs(gx-bx) + abs(gy-by)
+		if md < min {
+			min = md
+		}
+	}
+	return min
+}
+
+// total of all box heuristics
+func totalHeuristic(world sokoban, s mainstate) int {
 	total := 0
 	for _, box := range s.boxes {
-		min := math.MaxInt32
-		bx, by := int(box)%world.width, int(box)/world.width
-		for _, goal := range world.goals {
-			gx, gy := int(goal)%world.width, int(goal)/world.width
-			md := abs(gx-bx) + abs(gy-by)
-			if md < min {
-				min = md
-			}
-		}
-		total += min
+		total += boxHeuristic(world, box)
 	}
 	return total
 }
 
-// number of boxes not on a goal position - O(boxcount)
-func displaced(world sokoban, s mainstate) int {
-	displaced := len(s.boxes)
-	for _, box := range s.boxes {
-		displaced -= int(world.world[box] & goal) >> 2
-	}
-	return displaced
-}
-
 func (s mainstate) Heuristic(ctx solve.Context) float64 {
-	world := ctx.Custom.(sokoban)
-	//h := displaced(world, s)
-	h := minimalManhattan(world, s)
-	return float64(h)
+	return float64(s.heuristic)
+	//world := ctx.Custom.(sokoban)
+	////h := displaced(world, s)
+	//h := minimalManhattan(world, s)
+	//return float64(h)
 }
 
 func (s mainstate) IsGoal(ctx solve.Context) bool {
@@ -210,10 +208,11 @@ func push(world sokoban, s mainstate, position int, direction int, cost int) *ma
 			idx++
 		}
 	}
-	newState := mainstate{newboxes, newposition, s.cost + cost + 1}
+	newState := mainstate{newboxes, newposition, s.cost + cost + 1, 0}
 	if deadEnd(world, newState, int(newbox)) {
 		return nil
 	}
+	newState.heuristic = s.heuristic - boxHeuristic(world, uint16(newposition)) + boxHeuristic(world, newbox)
 	return &newState
 }
 
@@ -378,6 +377,7 @@ func parse(level string) (sokoban, mainstate) {
 			}
 		}
 	}
+	s.heuristic = totalHeuristic(c, s)
 	return c, s
 }
 
