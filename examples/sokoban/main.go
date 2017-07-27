@@ -143,7 +143,7 @@ var lastValue = -1
 func (s mainstate) IsGoal(ctx solve.Context) bool {
 	if s.cost + s.heuristic > lastValue {
 		lastValue = s.cost + s.heuristic
-		fmt.Printf("At: %v (%v)\n", lastValue, s.heuristic)
+		fmt.Printf("At depth %v\n", lastValue)
 	}
 	for i, value := range ctx.Custom.(sokoban).goals {
 		if s.boxes[i] != value {
@@ -172,23 +172,19 @@ func (s mainstate) Expand(ctx solve.Context) []solve.State {
 	}
 	paths := getWalkMoves(world, s, targets)
 
-	var children []solve.State
+	children := make([]solve.State, 0, len(paths))
 	for _, path := range paths {
 		p := path.position
 		for _, dir := range [...]int{-1, 1, -world.width, world.width} {
 			if isBox(valueOf(world, s, p+dir)) && isEmpty(valueOf(world, s, p+2*dir)) {
-				child := push(world, s, p, dir, path.cost)
-				if child != nil {
-					//print(world, child)
-					children = append(children, *child)
-				}
+				children = appendPushIfValid(children, world, s, p, dir, path.cost)
 			}
 		}
 	}
 	return children
 }
 
-func push(world sokoban, s mainstate, position int, direction int, cost int) *mainstate {
+func appendPushIfValid(children []solve.State, world sokoban, s mainstate, position int, direction int, cost int) []solve.State {
 	newposition := position + direction
 	newbox := uint16(position + direction*2)
 	newboxes := make([]uint16, len(s.boxes))
@@ -212,10 +208,10 @@ func push(world sokoban, s mainstate, position int, direction int, cost int) *ma
 	}
 	newState := mainstate{newboxes, newposition, s.cost + cost + 1, 0}
 	if deadEnd(world, newState, int(newbox)) {
-		return nil
+		return children
 	}
 	newState.heuristic = s.heuristic - boxHeuristic(world, uint16(newposition)) + boxHeuristic(world, newbox)
-	return &newState
+	return append(children, newState)
 }
 
 // looks in a 3x3 pattern around the box position if this is a dead end
@@ -530,7 +526,19 @@ var simpleLevel = `
 #  # # #
 ########`
 
-var level = `
+var mediumLevel =`
+   ####
+####  ##
+#      #
+# $*.* #
+#  *$.@##
+## * .$ #
+ ##.*.  #
+  #$$ ###
+  #   #
+  #####`
+
+var hardLevel = `
    ####
 ####  ##
 #   $  #
@@ -550,7 +558,7 @@ func main() {
 	pprof.StartCPUProfile(f)
 	defer pprof.StopCPUProfile()
 
-	world, root := parse(level)
+	world, root := parse(mediumLevel)
 	print(world, root)
 	start := time.Now()
 	result := solve.NewSolver(root).
@@ -562,9 +570,9 @@ func main() {
 	fmt.Printf("Time: %.1f seconds\n", time.Since(start).Seconds())
 	if result.Solved() {
 		fmt.Printf("Result:\n ")
-		for _, state := range result.Solution {
-			print(world, state.(mainstate))
-		}
+		//for _, state := range result.Solution {
+		//	print(world, state.(mainstate))
+		//}
 		fmt.Printf("Solved in %d moves\n", int(result.GoalState().(mainstate).cost))
 	}
 	fmt.Printf("visited %v main nodes\n", result.Visited)
