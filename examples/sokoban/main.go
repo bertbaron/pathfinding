@@ -138,26 +138,9 @@ func (s *mainstate) Cost(ctx solve.Context) float64 {
 	return float64(s.cost)
 }
 
-func abs(value int) int {
-	if value < 0 {
-		return -value
-	}
-	return value
-}
-
 // calculates a heuristic of moving a single box to its nearest goal
 func boxHeuristic(world sokoban, box uint16) int {
 	return costForMovingBlockToNearestGoal(world, int(box))
-	//min := math.MaxInt32
-	//bx, by := int(box)%world.width, int(box)/world.width
-	//for _, goal := range world.goals {
-	//	gx, gy := int(goal)%world.width, int(goal)/world.width
-	//	md := abs(gx-bx) + abs(gy-by)
-	//	if md < min {
-	//		min = md
-	//	}
-	//}
-	//return min
 }
 
 // total of all box heuristics
@@ -490,18 +473,17 @@ func parse(level string) (sokoban, *mainstate) {
 }
 
 // For cheapest path constraint
-type cpMap map[string]float64
+type cpkey [maxBoxes+1]uint16
+type cpMap map[cpkey]float64
 
-func key(state solve.State) string {
-	// nasty hack, but string seems to be the only variable-size type
-	// supported as map key. Would love to be able to use slices directly
+func key(state solve.State) cpkey {
+	var key cpkey
 	s := state.(*mainstate)
-	runes := make([]rune, len(s.boxes) + 1)
-	runes[0] = rune(s.position)
+	key[0] = uint16(s.position)
 	for i, box := range s.boxes {
-		runes[i+1] = rune(box)
+		key[i+1] = box
 	}
-	return string(runes)
+	return key
 }
 
 func (c cpMap) Get(state solve.State) (value float64, ok bool) {
@@ -522,39 +504,6 @@ func cheapestPathConstraint() solve.Constraint {
 	return solve.CheapestPathConstraint(&m)
 }
 
-type cpkey [maxBoxes+1]uint16
-
-// For cheapest path constraint
-type cpMap2 map[cpkey]float64
-
-func key2(state solve.State) cpkey {
-	var key cpkey
-	s := state.(*mainstate)
-	key[0] = uint16(s.position)
-	for i, box := range s.boxes {
-		key[i+1] = box
-	}
-	return key
-}
-
-func (c cpMap2) Get(state solve.State) (value float64, ok bool) {
-	value, ok = c[key2(state)]
-	return
-}
-
-func (c cpMap2) Put(state solve.State, value float64) {
-	c[key2(state)] = value
-}
-
-func (c *cpMap2) Clear() {
-	*c = make(cpMap2)
-}
-
-func cheapestPathConstraint2() solve.Constraint {
-	var m cpMap2
-	return solve.CheapestPathConstraint(&m)
-}
-
 func main() {
 	f, err := os.Create("cpu.prof")
 	if err != nil {
@@ -569,7 +518,7 @@ func main() {
 	result := solve.NewSolver(root).
 		Context(world).
 		Algorithm(solve.Astar).
-		Constraint(cheapestPathConstraint2()).
+		Constraint(cheapestPathConstraint()).
 		//Limit(44).
 		Solve()
 	fmt.Printf("Time: %.1f seconds\n", time.Since(start).Seconds())
