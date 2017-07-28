@@ -12,6 +12,40 @@ import (
 	"time"
 )
 
+const maxBoxes = 64
+
+var simpleLevel = `
+########
+#     @#
+#      #
+# $ # .#
+#  # # #
+########`
+
+var mediumLevel =`
+   ####
+####  ##
+#      #
+# $*.* #
+#  *$.@##
+## * .$ #
+ ##.*.  #
+  #$$ ###
+  #   #
+  #####`
+
+var hardLevel = `
+   ####
+####  ##
+#   $  #
+#  *** #
+#  . . ##
+## * *  #
+ ##***  #
+  # $ ###
+  # @ #
+  #####`
+
 const (
 	floor  byte = 0
 	wall   byte = 1
@@ -44,14 +78,15 @@ type sokoban struct {
 	// the static world, without player and boxes
 	world []byte
 	// sorted list of goal positions
-	goals  []uint16
+	goals  [maxBoxes]uint16
+	boxcount int
 	width  int
 	height int
 }
 
 type mainstate struct {
 	// sorted list of box positions
-	boxes    []uint16
+	boxes    [maxBoxes]uint16
 	position int
 	cost     int
 	heuristic int
@@ -66,8 +101,8 @@ func binarySearch(positions []uint16, position int) int {
 	return -1
 }
 
-func valueOf(s sokoban, m mainstate, position int) byte {
-	boxidx := binarySearch(m.boxes, position)
+func valueOf(s sokoban, m *mainstate, position int) byte {
+	boxidx := binarySearch(m.boxes[:s.boxcount], position)
 	var additional byte = 0
 	if m.position == position {
 		additional |= player
@@ -90,7 +125,7 @@ func isWall(value byte) bool {
 	return value&wall != 0
 }
 
-func print(s sokoban, m mainstate) {
+func print(s sokoban, m *mainstate) {
 	for position := range s.world {
 		fmt.Print(string(reverse[valueOf(s, m, position)]))
 		if position%s.width == s.width-1 {
@@ -99,7 +134,7 @@ func print(s sokoban, m mainstate) {
 	}
 }
 
-func (s mainstate) Cost(ctx solve.Context) float64 {
+func (s *mainstate) Cost(ctx solve.Context) float64 {
 	return float64(s.cost)
 }
 
@@ -128,19 +163,19 @@ func boxHeuristic(world sokoban, box uint16) int {
 // total of all box heuristics
 func totalHeuristic(world sokoban, s mainstate) int {
 	total := 0
-	for _, box := range s.boxes {
+	for _, box := range s.boxes[:world.boxcount] {
 		total += boxHeuristic(world, box)
 	}
 	return total
 }
 
-func (s mainstate) Heuristic(ctx solve.Context) float64 {
+func (s *mainstate) Heuristic(ctx solve.Context) float64 {
 	return float64(s.heuristic)
 }
 
 var lastValue = -1
 
-func (s mainstate) IsGoal(ctx solve.Context) bool {
+func (s *mainstate) IsGoal(ctx solve.Context) bool {
 	if s.cost + s.heuristic > lastValue {
 		lastValue = s.cost + s.heuristic
 		fmt.Printf("At depth %v\n", lastValue)
@@ -153,10 +188,10 @@ func (s mainstate) IsGoal(ctx solve.Context) bool {
 	return true
 }
 
-func (s mainstate) Expand(ctx solve.Context) []solve.State {
+func (s *mainstate) Expand(ctx solve.Context) []solve.State {
 	world := ctx.Custom.(sokoban)
 	targets := make([]int, 0)
-	for _, box := range s.boxes {
+	for _, box := range s.boxes[:world.boxcount] {
 		left := isEmpty(valueOf(world, s, int(box)-1))
 		right := isEmpty(valueOf(world, s, int(box)+1))
 		up := isEmpty(valueOf(world, s, int(box)-world.width))
@@ -184,15 +219,14 @@ func (s mainstate) Expand(ctx solve.Context) []solve.State {
 	return children
 }
 
-func appendPushIfValid(children []solve.State, world sokoban, s mainstate, position int, direction int, cost int) []solve.State {
+func appendPushIfValid(children []solve.State, world sokoban, s *mainstate, position int, direction int, cost int) []solve.State {
 	newposition := position + direction
 	newbox := uint16(position + direction*2)
-	newboxes := make([]uint16, len(s.boxes))
-	copy(newboxes, s.boxes)
-	idx := binarySearch(newboxes, newposition)
+	newboxes := s.boxes
+	idx := binarySearch(newboxes[:world.boxcount], newposition)
 	newboxes[idx] = newbox
 
-	n := len(newboxes)
+	n := world.boxcount
 	// insertion sort to keep boxes sorted, only needed when moving up or down
 	if direction < -1 {
 		for idx > 0 && newboxes[idx-1] > newbox {
@@ -207,15 +241,15 @@ func appendPushIfValid(children []solve.State, world sokoban, s mainstate, posit
 		}
 	}
 	newState := mainstate{newboxes, newposition, s.cost + cost + 1, 0}
-	if deadEnd(world, newState, int(newbox)) {
+	if deadEnd(world, &newState, int(newbox)) {
 		return children
 	}
 	newState.heuristic = s.heuristic - boxHeuristic(world, uint16(newposition)) + boxHeuristic(world, newbox)
-	return append(children, newState)
+	return append(children, &newState)
 }
 
 // looks in a 3x3 pattern around the box position if this is a dead end
-func deadEnd(world sokoban, s mainstate, position int) bool {
+func deadEnd(world sokoban, s *mainstate, position int) bool {
 	if world.world[position]&goal != 0 {
 		return false // box is on a goal position
 	}
@@ -316,7 +350,7 @@ func (c walkstateMap) Clear() {
 	}
 }
 
-func getWalkMoves(wc sokoban, s mainstate, targets []int) []walkstate {
+func getWalkMoves(wc sokoban, s *mainstate, targets []int) []walkstate {
 	context := walkcontext{wc.world, targets, wc.width}
 	context.world = make([]byte, len(wc.world))
 	copy(context.world, wc.world)
@@ -412,7 +446,7 @@ func costForMovingBlockToNearestGoal(wc sokoban, position int) int {
 
 
 
-func parse(level string) (sokoban, mainstate) {
+func parse(level string) (sokoban, *mainstate) {
 	width := 0
 	lines := strings.Split(level, "\n")
 	height := len(lines)
@@ -427,8 +461,8 @@ func parse(level string) (sokoban, mainstate) {
 	c.height = height
 
 	c.world = make([]byte, width*height)
-	c.goals = make([]uint16, 0)
-	s.boxes = make([]uint16, 0)
+	boxcount := 0
+	goalcount := 0
 	for y, row := range lines {
 		for x, raw := range row {
 			position := y*width + x
@@ -438,18 +472,21 @@ func parse(level string) (sokoban, mainstate) {
 					s.position = position
 				}
 				if value&goal != 0 {
-					c.goals = append(c.goals, uint16(position))
+					c.goals[goalcount] = uint16(position)
+					goalcount++
 				}
 				if value&box != 0 {
-					s.boxes = append(s.boxes, uint16(position))
+					s.boxes[boxcount] = uint16(position)
+					boxcount++
 				}
 			} else {
 				panic(fmt.Sprintf("Invalid level format, character %v is not valid", value))
 			}
 		}
 	}
+	c.boxcount = boxcount
 	s.heuristic = totalHeuristic(c, s)
-	return c, s
+	return c, &s
 }
 
 // For cheapest path constraint
@@ -458,7 +495,7 @@ type cpMap map[string]float64
 func key(state solve.State) string {
 	// nasty hack, but string seems to be the only variable-size type
 	// supported as map key. Would love to be able to use slices directly
-	s := state.(mainstate)
+	s := state.(*mainstate)
 	runes := make([]rune, len(s.boxes) + 1)
 	runes[0] = rune(s.position)
 	for i, box := range s.boxes {
@@ -485,14 +522,14 @@ func cheapestPathConstraint() solve.Constraint {
 	return solve.CheapestPathConstraint(&m)
 }
 
-type cpkey [11]uint16
+type cpkey [maxBoxes+1]uint16
 
 // For cheapest path constraint
 type cpMap2 map[cpkey]float64
 
 func key2(state solve.State) cpkey {
 	var key cpkey
-	s := state.(mainstate)
+	s := state.(*mainstate)
 	key[0] = uint16(s.position)
 	for i, box := range s.boxes {
 		key[i+1] = box
@@ -518,38 +555,6 @@ func cheapestPathConstraint2() solve.Constraint {
 	return solve.CheapestPathConstraint(&m)
 }
 
-var simpleLevel = `
-########
-#     @#
-#      #
-# $ # .#
-#  # # #
-########`
-
-var mediumLevel =`
-   ####
-####  ##
-#      #
-# $*.* #
-#  *$.@##
-## * .$ #
- ##.*.  #
-  #$$ ###
-  #   #
-  #####`
-
-var hardLevel = `
-   ####
-####  ##
-#   $  #
-#  *** #
-#  . . ##
-## * *  #
- ##***  #
-  # $ ###
-  # @ #
-  #####`
-
 func main() {
 	f, err := os.Create("cpu.prof")
 	if err != nil {
@@ -573,7 +578,7 @@ func main() {
 		//for _, state := range result.Solution {
 		//	print(world, state.(mainstate))
 		//}
-		fmt.Printf("Solved in %d moves\n", int(result.GoalState().(mainstate).cost))
+		fmt.Printf("Solved in %d moves\n", int(result.GoalState().(*mainstate).cost))
 	}
 	fmt.Printf("visited %v main nodes\n", result.Visited)
 
