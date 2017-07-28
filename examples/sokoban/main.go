@@ -188,6 +188,20 @@ func (s *mainstate) Expand(ctx solve.Context) []solve.State {
 			targets = append(targets, int(box)+world.width)
 		}
 	}
+	// deduplicate, O(n^2). For longer lists we better sort it in O(n log(n))
+	n := 0
+	for _, value := range targets {
+		exists := false
+		for _, existing := range targets[:n] {
+			if value == existing {
+				exists = true
+			}
+		}
+		if !exists {
+			targets[n] = value
+			n++
+		}
+	}
 	paths := getWalkMoves(world, s, targets)
 
 	children := make([]solve.State, 0, len(paths))
