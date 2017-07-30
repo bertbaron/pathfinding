@@ -70,7 +70,7 @@ var reverse = map[byte]rune{
 	floor:         ' ',
 	wall:          '#',
 	box:           '$',
-	goal:          '.',
+	goal:          '·',
 	player:        '@',
 	player | goal: '+',
 	box | goal:    '*'}
@@ -194,22 +194,7 @@ func (s *mainstate) Expand(ctx solve.Context) []solve.State {
 			targets = append(targets, int(box)+world.width)
 		}
 	}
-	// deduplicate, O(n^2). For longer lists we better sort it in O(n log(n))
-	n := 0
-	for _, value := range targets {
-		exists := false
-		for _, existing := range targets[:n] {
-			if value == existing {
-				exists = true
-			}
-		}
-		if !exists {
-			targets[n] = value
-			n++
-		}
-	}
-	paths := getWalkMoves(world, s, targets)
-
+	paths := getWalkMoves2(world, s, targets)
 	children := make([]solve.State, 0, len(paths))
 	for _, path := range paths {
 		p := path.position
@@ -292,93 +277,49 @@ func assertOrdered(positions []uint16) {
 
 // -------------- Sub problem for moving the player to all positions in which a box can be moved -----------
 
-type walkcontext struct {
-	// the static world, without player but with boxes because we don't move them here
-	world   []byte
-	targets []int
-	width   int
-}
-
 type walkstate struct {
 	position int
 	cost     int
 }
 
-func (s walkstate) Cost(ctx solve.Context) float64 {
-	return float64(s.cost)
-}
-
-func (s walkstate) Heuristic(ctx solve.Context) float64 {
-	return 0
-}
-
-func (s walkstate) IsGoal(ctx solve.Context) bool {
-	wc := ctx.Custom.(walkcontext)
-	for _, goal := range wc.targets {
-		if s.position == goal {
-			return true
-		}
-	}
-	return false
-}
-
-func (s walkstate) Expand(ctx solve.Context) []solve.State {
-	children := make([]solve.State, 0, 4)
-	wc := ctx.Custom.(walkcontext)
-	children = s.addIfValid(children, s.position-1, wc)
-	children = s.addIfValid(children, s.position+1, wc)
-	children = s.addIfValid(children, s.position-wc.width, wc)
-	children = s.addIfValid(children, s.position+wc.width, wc)
-	return children
-}
-
-func (s walkstate) addIfValid(children []solve.State, newPosition int, wc walkcontext) []solve.State {
-	if wc.world[newPosition]&wall == 0 {
-		return append(children, walkstate{newPosition, s.cost + 1})
-	}
-	return children
-}
-
-// Example of a CPMap implementation based on a slice
-type walkstateMap []float64
-
-func (c walkstateMap) Get(state solve.State) (float64, bool) {
-	value := c[state.(walkstate).position];
-	return value, value >= 0
-}
-
-func (c walkstateMap) Put(state solve.State, value float64) {
-	c[state.(walkstate).position] = value
-}
-
-func (c walkstateMap) Clear() {
-	for i := range c {
-		c[i] = -1
-	}
-}
-
-func getWalkMoves(wc sokoban, s *mainstate, targets []int) []walkstate {
-	context := walkcontext{wc.world, targets, wc.width}
-	context.world = make([]byte, len(wc.world))
-	copy(context.world, wc.world)
+func getWalkMoves2(wc sokoban, s *mainstate, targets []int) []walkstate {
+	world := make([]byte, len(wc.world))
+	copy(world, wc.world)
 	for _, boxposition := range s.boxes {
-		context.world[boxposition] |= wall
+		world[boxposition] = wall // mark boxes a wall
 	}
-	rootstate := walkstate{s.position, 0}
-	wsMap := make(walkstateMap, len(wc.world))
-	solver := solve.NewSolver(rootstate).
-		Context(context).
-		Constraint(solve.CheapestPathConstraint(wsMap)).
-		Algorithm(solve.BreadthFirst)
-	solutions := make([]walkstate, 0)
-	for solution := solver.Solve(); solution.Solved(); solution = solver.Solve() {
-		solutions = append(solutions, solution.GoalState().(walkstate))
-		if len(solutions) == len(targets) {
-			break;
+	for _, target := range targets {
+		world[target] = player // mark target positions as player
+	}
+
+	result := make([]walkstate, 0, len(targets))
+
+	// breadth-first search
+	queue := make([]walkstate, len(wc.world))
+	queue[0] = walkstate{s.position, 0}
+	world[s.position] |= wall
+	start := 0
+	end := 1
+	for end > start {
+		state := queue[start]
+		start++
+		value := world[state.position]
+
+		if value & player != 0 {
+			result = append(result, state)
+		}
+		for _, dir := range [...]int{-1,1,-wc.width, wc.width} {
+			newPos := state.position + dir
+			if world[newPos] & wall == 0 {
+				world[newPos] |= wall // mark as enqueued by simply putting a wall there
+				queue[end] = walkstate{newPos, state.cost+1}
+				end++
+			}
 		}
 	}
-	return solutions
+	return result
 }
+
 
 // ------------ Sub problem of moving a single box to its nearest target
 
