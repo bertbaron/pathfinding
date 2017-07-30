@@ -143,13 +143,10 @@ func (s *mainstate) Cost(ctx solve.Context) float64 {
 	return float64(s.cost)
 }
 
-// calculates a heuristic of moving a single box to its nearest goal
 func boxHeuristic(world sokoban, box uint16) int {
 	return world.heuristics[int(box)]
-	//return costForMovingBlockToNearestGoal(world, int(box))
 }
 
-// total of all box heuristics
 func totalHeuristic(world sokoban, s *mainstate) int {
 	total := 0
 	for _, box := range s.boxes[:world.boxcount] {
@@ -229,11 +226,8 @@ func appendPushIfValid(children []solve.State, world sokoban, s *mainstate, posi
 		}
 	}
 	newState := mainstate{newboxes, newposition, s.cost + cost + 1, 0}
-	if deadEnd(world, &newState, int(newbox)) {
-		return children
-	}
 	h := boxHeuristic(world, newbox)
-	if h >= unsolvable {
+	if h >= unsolvable || deadEnd(world, &newState, int(newbox)) {
 		return children
 	}
 	newState.heuristic = s.heuristic - boxHeuristic(world, uint16(newposition)) + h
@@ -267,16 +261,11 @@ func deadEnd(world sokoban, s *mainstate, position int) bool {
 	return u && r || r && d || d && l || l && u
 }
 
-func assertOrdered(positions []uint16) {
-	for i, value := range positions[1:] {
-		if value <= positions[i] {
-			panic(fmt.Sprintf("Ordering invariant violated: %v", positions))
-		}
-	}
-}
-
 // -------------- Sub problem for moving the player to all positions in which a box can be moved -----------
-
+/*
+ This could be simply implemented with a breadth-first search using the library, but for this very simple
+ problem which is executed on each expand in the main search the overhead of the library is significant.
+ */
 type walkstate struct {
 	position int
 	cost     int
